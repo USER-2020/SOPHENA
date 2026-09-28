@@ -1,0 +1,141 @@
+/* Responsive system: mobile-first behavior for SOPHENA */
+html { overflow-x:hidden; }
+body { min-width:320px; }
+button, a, input, select, textarea { -webkit-tap-highlight-color:transparent; }
+button, a { touch-action:manipulation; }
+
+@media (max-width:1100px) {
+  .welcome-page { padding-inline:32px; }
+  .welcome-grid { gap:20px; }
+  .orbit-art { transform:scale(.88); transform-origin:center; margin-inline:-35px; }
+  .auth-panel { padding-inline:5vw; }
+  .admin-content { padding-inline:32px; }
+}
+
+@media (max-width:900px) {
+  .welcome-grid { grid-template-columns:minmax(0,1.05fr) minmax(280px,.95fr); }
+  .welcome-copy h1 { font-size:clamp(46px,7vw,70px); }
+  .orbit-art { min-height:500px; }
+  .auth-page { grid-template-columns:1fr; }
+  .auth-aside { display:none; }
+  .auth-panel { min-height:100svh; padding:32px max(24px,6vw); }
+  .auth-content { width:min(520px,100%); margin:auto; }
+  .admin-layout { display:block; }
+  .admin-sidebar { width:100%; min-height:0; padding:20px 24px; }
+  .admin-sidebar nav { display:flex; gap:6px; margin-top:20px; overflow-x:auto; padding-bottom:3px; scrollbar-width:none; }
+  .admin-sidebar nav::-webkit-scrollbar { display:none; }
+  .admin-sidebar nav button { flex:0 0 auto; white-space:nowrap; }
+  .admin-back { margin-top:15px; }
+  .admin-content { max-width:100%; }
+  .admin-crud-layout { grid-template-columns:minmax(0,1fr); }
+}
+
+@media (max-width:760px) {
+  .welcome-page { min-height:100svh; padding:20px 18px max(18px,env(safe-area-inset-bottom)); }
+  .welcome-top { gap:14px; }
+  .welcome-top .logo { font-size:13px; }
+  .welcome-top .ghost-link { font-size:11px; white-space:nowrap; }
+  .welcome-grid { display:flex; flex-direction:column; align-items:stretch; gap:0; margin-top:42px; }
+  .welcome-copy { max-width:none; }
+  .welcome-copy .eyebrow { margin-bottom:18px; font-size:9px; }
+  .welcome-copy h1 { font-size:clamp(43px,12vw,62px); line-height:.96; margin-bottom:18px; }
+  .welcome-copy p { max-width:520px; margin-bottom:25px; font-size:14px; line-height:1.65; }
+  .welcome-actions { gap:18px; }
+  .welcome-actions .button { min-height:48px; }
+  .social-proof { margin-top:28px; font-size:10px; }
+  .orbit-art { width:100%; min-height:330px; margin:8px 0 -30px; transform:scale(.72); }
+  .orbit-one { width:420px; height:250px; }
+  .orbit-two { width:500px; height:300px; }
+  .orbit-three { width:340px; height:340px; }
+  .float-card-one { left:-8px; top:15%; }
+  .float-card-two { right:-8px; top:8%; }
+  .float-card-three { right:0; bottom:8%; }
+  .welcome-footer { flex-wrap:wrap; gap:10px; line-height:1.5; }
+  .welcome-footer span:first-child { max-width:none; }
+
+  .wizard-page { min-height:100svh; padding:20px 18px max(20px,env(safe-area-inset-bottom)); }
+  .wizard-shell { min-height:calc(100svh - 40px); }
+  .wizard-header .logo { font-size:13px; }
+  .wizard-progress { margin-top:22px; }
+  .wizard-content { margin:48px 0 auto; }
+  .wizard-content h1 { font-size:clamp(42px,12vw,58px); }
+  .wizard-intro { margin-bottom:24px; font-size:13px; }
+  .form-grid { grid-template-columns:1fr; gap:14px; }
+  .habit-grid,.reason-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+  .habit-choice { min-height:92px; padding:13px; gap:11px; font-size:11px; }
+  .reason-choice { min-height:55px; padding:12px 10px; font-size:11px; }
+  .option-stack,.money-label { max-width:none; }
+  .wizard-footer { gap:14px; padding-top:24px; }
+  .wizard-footer .button { min-height:46px; padding-inline:15px; }
+
+  .admin-sidebar { padding:18px 16px; }
+  .admin-sidebar .logo { padding:0 4px; }
+  .admin-badge { margin:20px 4px 0; }
+  .admin-header { padding:18px 16px; }
+  .admin-header h1 { font-size:22px; }
+  .admin-content { padding:25px 16px max(45px,env(safe-area-inset-bottom)); }
+  .admin-welcome { padding:20px; }
+  .admin-welcome h2 { font-size:28px; }
+  .admin-stats { grid-template-columns:1fr 1fr; gap:9px; }
+  .admin-stat { padding:15px; }
+  .admin-stat strong { font-size:24px; }
+  .admin-quick-grid { grid-template-columns:1fr; }
+  .admin-form { padding:16px; }
+  .admin-form-row { display:grid; grid-template-columns:1fr; align-items:stretch; }
+  .admin-list-row { align-items:flex-start; flex-wrap:wrap; }
+  .admin-list-row > div:nth-child(2) { min-width:calc(100% - 55px); }
+  .admin-row-actions { width:100%; justify-content:flex-end; }
+  .shadcn-select-content { position:fixed; left:16px; right:16px; top:auto; bottom:16px; }
+
+  .page-content { padding-inline:16px; }
+  .dashboard-grid { grid-template-columns:1fr; }
+  .streak-top h3 { font-size:50px; }
+  .streak-top .progress-ring { transform:scale(.84); transform-origin:right center; }
+  .stats-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .checkin-card { gap:10px; }
+  .checkin-card .button { width:100%; margin-left:0; }
+  .chart-wrap { height:190px; }
+  .progress-layout,.profile-layout { grid-template-columns:1fr; }
+  .page-intro h1 { font-size:32px; }
+  .calendar-card,.summary-highlight,.weekly-card { padding:16px; }
+  .weekday-row,.calendar-grid { gap:4px; }
+  .calendar-day { height:36px; }
+  .insights-grid,.achievement-grid,.reward-grid { grid-template-columns:1fr; }
+  .profile-hero { gap:12px; }
+  .profile-hero .icon-button { flex:none; }
+  .action-grid { grid-template-columns:1fr; }
+  .action-sheet { max-height:calc(100svh - 18px); overflow-y:auto; }
+  .profile-edit-backdrop,.habit-manager-backdrop { padding:10px; align-items:end; }
+  .profile-edit-modal,.habit-manager-modal { max-height:calc(100svh - 20px); overflow-y:auto; border-radius:20px 20px 0 0; }
+}
+
+@media (max-width:480px) {
+  .logo { gap:8px; letter-spacing:.16em; }
+  .logo-mark { width:26px; height:26px; }
+  .welcome-top .ghost-link svg { display:none; }
+  .welcome-copy h1 { font-size:45px; }
+  .welcome-actions { align-items:stretch; flex-direction:column; }
+  .welcome-actions .button,.welcome-actions .text-button { width:100%; justify-content:center; }
+  .orbit-art { min-height:285px; transform:scale(.6); margin-top:-4px; }
+  .welcome-footer { display:block; }
+  .welcome-footer div { margin-top:8px; }
+  .habit-grid,.reason-grid { grid-template-columns:1fr; }
+  .goal-pills button { flex:1; min-width:54px; padding-inline:9px; }
+  .wizard-footer .text-button { font-size:11px; }
+  .wizard-footer .button { flex:1; }
+  .stats-grid { gap:8px; }
+  .stat-card { min-height:118px; padding:12px; }
+  .stat-card strong { font-size:18px; }
+  .stat-label { font-size:9px; }
+  .bottom-nav { padding-inline:5px; }
+  .bottom-nav button { font-size:8px; }
+  .nav-plus { width:47px; height:47px; margin-inline:3px; }
+  .admin-stats { grid-template-columns:1fr; }
+  .admin-auth-card { padding:22px 18px; }
+  .admin-auth-brand { margin-bottom:30px; }
+  .admin-auth-card h1 { font-size:30px; }
+}
+
+@media (prefers-reduced-motion:reduce) {
+  .orbit-art,.splash-orbit { transform:none!important; animation:none!important; }
+}

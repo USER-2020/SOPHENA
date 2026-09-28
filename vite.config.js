@@ -4,6 +4,10 @@ import { VitePWA } from 'vite-plugin-pwa';
 import { brand } from './src/config/brand.js';
 
 export default defineConfig({
+  server: {
+    host: true,
+    allowedHosts: ['.trycloudflare.com']
+  },
   plugins: [
     react(),
     VitePWA({

@@ -1,6 +1,22 @@
 import { supabase, supabaseConfigured } from '../lib/supabase';
+import { brand } from '../config/brand';
 
 const LOCAL_KEY = 'sophena-local-state';
+
+const defaultAchievementCatalog = [
+  { id: 'demo-achievement-first-day', slug: 'primer-dia', name: 'Primer día', description: 'Completaste tu primer registro y comenzaste tu proceso.', points: 50, icon: 'shield' },
+  { id: 'demo-achievement-first-checkin', slug: 'primer-check-in', name: 'Primer check-in', description: 'Registraste cómo te fue por primera vez.', points: 25, icon: 'sparkles' },
+  { id: 'demo-achievement-three-days', slug: 'tres-dias-presente', name: 'Tres días presente', description: 'Completaste 3 días de seguimiento consecutivos.', points: 75, icon: 'award' },
+  { id: 'demo-achievement-week', slug: 'una-semana-en-control', name: 'Una semana en control', description: 'Mantuviste una racha de 7 días.', points: 150, icon: 'rocket' },
+  { id: 'demo-achievement-first-craving', slug: 'primer-impulso-superado', name: 'Primer impulso superado', description: 'Registraste y superaste tu primer impulso.', points: 100, icon: 'heart' },
+  { id: 'demo-achievement-different-choice', slug: 'elegiste-diferente', name: 'Elegiste diferente', description: 'Tomaste una decisión distinta frente a un impulso.', points: 125, icon: 'target' },
+  { id: 'demo-achievement-first-saving', slug: 'primer-ahorro', name: 'Primer ahorro', description: 'Registraste tu primer gasto evitado.', points: 75, icon: 'wallet' },
+  { id: 'demo-achievement-recovered-money', slug: 'dinero-recuperado', name: 'Dinero recuperado', description: 'Evitaste gastar tus primeros $50.000.', points: 200, icon: 'gift' },
+  { id: 'demo-achievement-two-weeks', slug: 'dos-semanas-constantes', name: 'Dos semanas constantes', description: 'Completaste 14 días de seguimiento.', points: 300, icon: 'sparkles' },
+  { id: 'demo-achievement-month', slug: 'un-mes-de-avance', name: 'Un mes de avance', description: 'Mantuviste tu proceso durante 30 días.', points: 600, icon: 'rocket' },
+  { id: 'demo-achievement-new-version', slug: 'nueva-version', name: 'Nueva versión', description: 'Completaste 90 días de constancia.', points: 1000, icon: 'heart' },
+  { id: 'demo-achievement-returned', slug: 'volviste-a-elegirte', name: 'Volviste a elegirte', description: 'Registraste una recaída y retomaste tu proceso.', points: 100, icon: 'flame' },
+];
 
 const defaults = {
   profile: { id: 'demo-user', full_name: 'Tu nombre', email: 'tu@sophena.online', points: 0, role: 'super_admin' },
@@ -11,8 +27,9 @@ const defaults = {
     { id: 'demo-headphones', name: 'Audífonos', points_cost: 2000, description: 'Tu próxima playlist', is_redeemed: false },
   ],
   notifications: { weekly_summary: true, monthly_summary: true, checkin_reminders: true, achievements: true, goals: true },
-  achievements: [],
+  achievements: defaultAchievementCatalog,
   userAchievements: [],
+  pointTransactions: [],
   appModules: [],
   appSettings: [],
   appThemes: [{ id: 'demo-theme', theme_key: 'sophena-default', name: 'SOPHENA', enabled: true, is_active: true, config: { bg: '#0D0B12', surface: '#15121C', card: '#211C2C', purple: '#A78BFA', green: '#75D6C4', amber: '#F3C677', danger: '#E17C8C' } }],
@@ -20,7 +37,17 @@ const defaults = {
 };
 
 function readLocal() {
-  try { return { ...defaults, ...JSON.parse(localStorage.getItem(LOCAL_KEY) || '{}') }; } catch { return defaults; }
+  try {
+    const saved = JSON.parse(localStorage.getItem(LOCAL_KEY) || '{}');
+    const state = { ...defaults, ...saved };
+    if (!saved.achievementCatalogVersion) {
+      const existing = state.achievements || [];
+      state.achievements = [...existing, ...defaultAchievementCatalog.filter(item => !existing.some(current => current.slug === item.slug))];
+      state.achievementCatalogVersion = 1;
+      localStorage.setItem(LOCAL_KEY, JSON.stringify(state));
+    }
+    return state;
+  } catch { return defaults; }
 }
 function writeLocal(state) { localStorage.setItem(LOCAL_KEY, JSON.stringify(state)); return state; }
 function localUser() { return readLocal().profile; }
@@ -49,7 +76,8 @@ export const authService = {
   },
   async requestPasswordReset(email) {
     if (!supabaseConfigured) return { error: null, demo: true };
-    const redirectTo = `${window.location.origin}/reset-password`;
+    const redirectBase = window.location.hostname === 'sophena.online' ? brand.url : window.location.origin;
+    const redirectTo = `${redirectBase}/reset-password`;
     const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
     return { error };
   },
@@ -118,18 +146,65 @@ export const savingService = {
   create: async payload => { const user = await currentUser(); return insert('savings', { ...payload, user_id: user?.id }, 'savings'); },
   remove: id => remove('savings', id, 'savings'),
 };
+const localPointRules = {
+  checkin_completed: { points: 10, enabled: true },
+  craving_overcome: { points: 15, enabled: true },
+  craving_reduced: { points: 8, enabled: true },
+  saving_registered: { points: 5, enabled: true },
+  saving_bonus: { points: 1, amount_unit: 10000, enabled: true },
+};
+function localRule(actionKey, state) { const configured = (state.appSettings || []).find(item => item.setting_key === 'point_rules')?.value?.rules || []; return configured.find(rule => rule.action_key === actionKey) || localPointRules[actionKey]; }
+export const pointService = {
+  list: async () => { const user = await currentUser(); return list('point_transactions', 'pointTransactions', { userColumn: 'user_id', userId: user?.id, order: 'created_at' }); },
+  async award({ actionKey, sourceId, amount = 0, metadata = {} }) {
+    const user = await currentUser(); if (!user || !sourceId) throw new Error('No se pudo identificar la acción.');
+    if (supabaseConfigured) { const { data, error } = await supabase.rpc('award_points', { p_action_key: actionKey, p_source_id: sourceId, p_amount: Number(amount || 0), p_metadata: metadata }); if (error) throw error; return data; }
+    const state = readLocal(); const rule = localRule(actionKey, state); if (!rule || rule.enabled === false) return { awarded: false, points: 0, reason: 'rule_disabled' }; const duplicate = (state.pointTransactions || []).some(item => item.user_id === user.id && item.action_key === actionKey && item.source_id === sourceId); if (duplicate) return { awarded: false, points: 0, reason: 'already_awarded' }; const points = actionKey === 'saving_bonus' ? Math.floor(Number(amount || 0) / Math.max(1, Number(rule.amount_unit || 10000))) * Number(rule.points || 0) : Number(rule.points || 0); if (points <= 0) return { awarded: false, points: 0, reason: 'zero_points' }; const transaction = { id: crypto.randomUUID(), user_id: user.id, action_key: actionKey, source_id: sourceId, points, amount: Number(amount || 0), metadata, created_at: new Date().toISOString() }; state.pointTransactions = [transaction, ...(state.pointTransactions || [])]; state.profile = { ...state.profile, points: Number(state.profile?.points || 0) + points }; writeLocal(state); return { awarded: true, points, transaction_id: transaction.id };
+  },
+};
 export const rewardService = {
   list: () => list('rewards', 'rewards', { order: 'created_at' }),
   create: async payload => { const user = await currentUser(); return insert('rewards', { ...payload, user_id: user?.id }, 'rewards'); },
   update: (id, payload) => update('rewards', id, payload, 'rewards'),
   remove: id => remove('rewards', id, 'rewards'),
 };
-export const userAchievementService = { list: async () => { const user = await currentUser(); return list('user_achievements', 'userAchievements', { userColumn: 'user_id', userId: user?.id, order: 'unlocked_at' }); } };
+function localAchievementCriteria(state) {
+  const completedCheckins = (state.checkins || []).filter(item => item.status === 'completed');
+  const dates = [...new Set(completedCheckins.map(item => item.checkin_date).filter(Boolean).map(date => String(date).slice(0, 10)))].sort();
+  let streak = 0;
+  if (dates.length) {
+    const available = new Set(dates); const cursor = new Date(`${dates[dates.length - 1]}T00:00:00Z`);
+    while (available.has(cursor.toISOString().slice(0, 10))) { streak += 1; cursor.setUTCDate(cursor.getUTCDate() - 1); }
+  }
+  const cravings = state.cravingLogs || []; const savings = state.savings || []; const relapses = state.relapseLogs || [];
+  const resumedAfterRelapse = relapses.some(relapse => (state.checkins || []).some(checkin => new Date(checkin.created_at || checkin.checkin_date || 0) > new Date(relapse.occurred_at || relapse.created_at || 0)));
+  return { 'primer-dia': (state.habits || []).length > 0, 'primer-check-in': completedCheckins.length >= 1, 'tres-dias-presente': streak >= 3, 'una-semana-en-control': streak >= 7, 'primer-impulso-superado': cravings.some(item => item.outcome === 'mucho'), 'elegiste-diferente': cravings.some(item => item.outcome === 'mucho' || item.outcome === 'un_poco'), 'primer-ahorro': savings.length >= 1, 'dinero-recuperado': savings.reduce((total, item) => total + Number(item.amount || 0), 0) >= 50000, 'dos-semanas-constantes': streak >= 14, 'un-mes-de-avance': streak >= 30, 'nueva-version': streak >= 90, 'volviste-a-elegirte': relapses.length > 0 && resumedAfterRelapse };
+}
+export const userAchievementService = {
+  list: async () => { const user = await currentUser(); return list('user_achievements', 'userAchievements', { userColumn: 'user_id', userId: user?.id, order: 'unlocked_at' }); },
+  evaluate: async () => {
+    const user = await currentUser(); if (!user) throw new Error('SesiÃ³n no iniciada');
+    if (supabaseConfigured) { const { data, error } = await supabase.rpc('evaluate_my_achievements'); if (error) throw error; return data || []; }
+    const state = readLocal(); const criteria = localAchievementCriteria(state); const unlocked = [];
+    for (const achievement of state.achievements || []) if (criteria[achievement.slug]) { const result = await userAchievementService.unlock(achievement.id); if (result.unlocked) unlocked.push({ ...achievement, result }); }
+    return unlocked;
+  },
+  unlock: async achievementId => { const user = await currentUser(); if (!user) throw new Error('Sesión no iniciada'); if (supabaseConfigured) { const { data, error } = await supabase.rpc('unlock_achievement', { p_achievement_id: achievementId }); if (error) throw error; return data; } const state = readLocal(); const alreadyUnlocked = (state.userAchievements || []).some(item => item.user_id === user.id && item.achievement_id === achievementId); if (alreadyUnlocked) return { unlocked: false, points: { awarded: false, points: 0, reason: 'already_unlocked' } }; const item = { id: crypto.randomUUID(), user_id: user.id, achievement_id: achievementId, unlocked_at: new Date().toISOString() }; state.userAchievements = [item, ...(state.userAchievements || [])]; writeLocal(state); const points = await pointService.award({ actionKey: 'achievement_unlocked', sourceId: achievementId }); return { unlocked: true, points };
+  },
+};
 export const notificationService = {
   get: async () => { if (!supabaseConfigured) return readLocal().notifications; const user = await currentUser(); const { data, error } = await supabase.from('notification_preferences').select('*').eq('user_id', user.id).single(); if (error) throw error; return data; },
   update: async payload => { if (!supabaseConfigured) { const state = readLocal(); state.notifications = { ...state.notifications, ...payload }; writeLocal(state); return state.notifications; } const user = await currentUser(); return update('notification_preferences', user.id, payload, 'notifications'); },
 };
 export const adminService = {
+  listUsers: async () => { if (supabaseConfigured) { const { data, error } = await supabase.rpc('list_admin_users'); if (error) throw error; return data || []; } return readLocal().adminUsers || [{ id: 'demo-user', email: readLocal().profile.email, full_name: readLocal().profile.full_name, role: readLocal().profile.role, points: readLocal().profile.points, created_at: new Date().toISOString() }]; },
+  inviteUser: async payload => { if (supabaseConfigured) { const { data, error } = await supabase.functions.invoke('admin-create-user', { body: payload }); if (error) throw error; if (data?.error) throw new Error(data.error); return data; } const state = readLocal(); const item = { id: crypto.randomUUID(), email: payload.email, full_name: payload.fullName || '', role: payload.role || 'user', points: 0, created_at: new Date().toISOString() }; state.adminUsers = [item, ...(state.adminUsers || [])]; writeLocal(state); return item; },
+  updateUserRole: async (userId, role) => { if (supabaseConfigured) { const { data, error } = await supabase.rpc('admin_update_user_role', { p_user_id: userId, p_role_key: role }); if (error) throw error; return data; } const state = readLocal(); state.adminUsers = (state.adminUsers || []).map(user => user.id === userId ? { ...user, role } : user); writeLocal(state); return state.adminUsers.find(user => user.id === userId); },
+  listRoles: () => list('app_roles', 'appRoles', { order: 'created_at' }),
+  createRole: payload => insert('app_roles', payload, 'appRoles'),
+  listPermissions: () => list('app_permissions', 'appPermissions', { order: 'permission_key' }),
+  listRolePermissions: () => list('role_permissions', 'rolePermissions', { order: 'created_at' }),
+  setRolePermission: async (roleKey, permissionKey, enabled) => { if (supabaseConfigured) { if (enabled) { const { data, error } = await supabase.from('role_permissions').upsert({ role_key: roleKey, permission_key: permissionKey }).select().single(); if (error) throw error; return data; } const { error } = await supabase.from('role_permissions').delete().eq('role_key', roleKey).eq('permission_key', permissionKey); if (error) throw error; return true; } const state = readLocal(); const existing = (state.rolePermissions || []).find(item => item.role_key === roleKey && item.permission_key === permissionKey); if (enabled && !existing) state.rolePermissions = [...(state.rolePermissions || []), { role_key: roleKey, permission_key: permissionKey }]; if (!enabled) state.rolePermissions = (state.rolePermissions || []).filter(item => !(item.role_key === roleKey && item.permission_key === permissionKey)); writeLocal(state); return true; },
   listAchievements: () => list('achievements', 'achievements', { order: 'name' }),
   createAchievement: payload => insert('achievements', payload, 'achievements'),
   updateAchievement: (id, payload) => update('achievements', id, payload, 'achievements'),
@@ -173,6 +248,7 @@ export const onboardingService = {
     if (!pending) return false;
     const createdHabits = await Promise.all((pending.habits || []).map(habit => habitService.create(habit)));
     await Promise.all(createdHabits.map(habit => goalService.create({ habit_id: habit.id, target_days: pending.targetDays || 7, reason: pending.reason || 'Salud', status: 'active' })));
+    await userAchievementService.evaluate();
     localStorage.removeItem('sophena-pending-onboarding');
     localStorage.removeItem('nuvora-pending-onboarding');
     if (supabaseConfigured && (user?.user_metadata?.sophena_onboarding || user?.user_metadata?.nuvora_onboarding)) await supabase.auth.updateUser({ data: { ...user.user_metadata, sophena_onboarding: null, nuvora_onboarding: null } });
@@ -180,4 +256,4 @@ export const onboardingService = {
   },
 };
 
-export const dataApi = { authService, profileService, habitService, goalService, checkinService, cravingService, relapseService, savingService, rewardService, userAchievementService, notificationService, adminService, themeService, feedService, onboardingService, isSupabaseConfigured: supabaseConfigured };
+export const dataApi = { authService, profileService, habitService, goalService, checkinService, cravingService, relapseService, savingService, pointService, rewardService, userAchievementService, notificationService, adminService, themeService, feedService, onboardingService, isSupabaseConfigured: supabaseConfigured };
