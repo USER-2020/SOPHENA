@@ -1,0 +1,16 @@
+/* SOPHENA brand layer */
+.sophena-mark { background:linear-gradient(135deg,#A78BFA,#75D6C4); box-shadow:0 5px 18px #A78BFA40; }
+.sophena-mark svg { width:80%; height:80%; fill:none; stroke:#fff; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+.surface-card { background:linear-gradient(145deg,#211C2C,#15121C); }
+.button-primary { background:linear-gradient(135deg,#A78BFA,#75D6C4); color:#15121C; box-shadow:0 10px 28px #A78BFA35; }
+.page-dark { background:radial-gradient(circle at 85% 15%,#A78BFA22,transparent 32%),var(--bg); }
+.sophena-splash { position:fixed; z-index:100; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; background:#0D0B12; color:#AAA4B4; animation:splash-in .35s ease both; }
+.sophena-splash .logo { font-size:20px; }
+.sophena-splash p { color:#F7F5FA; font-size:13px; letter-spacing:.08em; margin:15px 0 0; }
+.sophena-splash>span { color:#746E7D; font-size:11px; }
+.core-n .logo { font-size:11px; letter-spacing:.14em; }
+.core-n .logo-mark { width:54px; height:54px; border-radius:18px; }
+.splash-orbit { padding:20px; border-radius:50%; box-shadow:0 0 0 1px #A78BFA33,0 0 0 18px #A78BFA0D,0 0 75px #A78BFA40; animation:splash-float 2.2s ease-in-out infinite; }
+@keyframes splash-in { from { opacity:0; } to { opacity:1; } }
+@keyframes splash-float { 50% { transform:translateY(-6px) scale(1.03); } }
+
