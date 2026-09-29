@@ -1,5 +1,5 @@
 blank_issues_enabled: true
 contact_links:
-  - name: Reportar una vulnerabilidad de seguridad
+  - name: Report a security vulnerability
     url: https://github.com/USER-2020/SOPHENA/security/advisories/new
-    about: No publiques vulnerabilidades en Issues; usa un reporte privado.
+    about: Do not publish vulnerabilities in Issues; use a private report.

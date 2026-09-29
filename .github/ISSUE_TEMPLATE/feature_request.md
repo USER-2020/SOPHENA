@@ -1,30 +1,30 @@
 ---
-name: Proponer una funcionalidad
-about: Propón una mejora que haga SOPHENA más útil, clara o accesible
+name: Request a feature
+about: Suggest an improvement that would make SOPHENA more useful, clear, or accessible
 title: "[Feature]: "
 labels: enhancement
 assignees: ''
 ---
 
-## Problema u oportunidad / Problem or opportunity
+## Problem or opportunity
 
-<!-- ¿Qué necesidad concreta resolvería? -->
+<!-- What concrete need would this solve? -->
 
-## Propuesta / Proposal
+## Proposal
 
-<!-- Describe la solución ideal. Puedes incluir un boceto o ejemplo. -->
+<!-- Describe the ideal solution. You may include a sketch or example. -->
 
-## Personas beneficiadas / Who benefits
+## Who benefits
 
-<!-- ¿A quién ayuda y en qué contexto? Evita compartir historias identificables. -->
+<!-- Who would this help and in what context? Avoid identifiable personal stories. -->
 
-## Alternativas consideradas / Alternatives considered
+## Alternatives considered
 
-## Criterios de aceptación / Acceptance criteria
+## Acceptance criteria
 
 - [ ]
 - [ ]
 
-## Consideraciones / Considerations
+## Considerations
 
-<!-- Accesibilidad, privacidad, cambios de datos, impacto móvil o dependencias. -->
+<!-- Accessibility, privacy, data changes, mobile impact, or dependencies. -->
