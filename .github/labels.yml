@@ -1,25 +1,25 @@
-# Catálogo de etiquetas recomendadas para GitHub.
-# GitHub no aplica este archivo automáticamente; úsalo como fuente de verdad
-# al crear o sincronizar etiquetas desde Settings → Issues → Labels.
+# Recommended GitHub labels.
+# GitHub does not apply this file automatically; use it as the source of truth
+# when creating or synchronizing labels under Settings → Issues → Labels.
 labels:
   - name: good first issue
     color: "7057ff"
-    description: Tarea acotada para personas que empiezan a contribuir
+    description: A scoped task for people who are new to contributing
   - name: help wanted
     color: "008672"
-    description: El equipo busca ayuda de la comunidad
+    description: The team is looking for community help
   - name: bug
     color: "d73a4a"
-    description: Algo no funciona como debería
+    description: Something is not working as expected
   - name: frontend
     color: "1d76db"
-    description: Interfaz, React, estilos o experiencia de usuario
+    description: Interface, React, styles, or user experience
   - name: backend
     color: "5319e7"
-    description: Supabase, migraciones, RLS o Edge Functions
+    description: Supabase, migrations, RLS, or Edge Functions
   - name: documentation
     color: "0075ca"
-    description: README, guías, comentarios o contenido educativo
+    description: README, guides, comments, or educational content
   - name: enhancement
     color: "a2eeef"
-    description: Mejora o nueva capacidad
+    description: An improvement or new capability

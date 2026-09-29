@@ -1,36 +1,36 @@
-## Resumen / Summary
+## Summary
 
-<!-- ¿Qué problema resuelve este PR y qué cambió? -->
+<!-- What problem does this PR solve and what changed? -->
 
-## Issue relacionado / Related Issue
+## Related Issue
 
-<!-- Usa "Closes #123" si corresponde. -->
+<!-- Use "Closes #123" when applicable. -->
 
-## Tipo de cambio / Change type
+## Change type
 
 - [ ] Bug fix
-- [ ] Nueva funcionalidad
-- [ ] Mejora de UI/UX
-- [ ] Documentación
-- [ ] Refactor o mantenimiento
-- [ ] Cambio de base de datos
+- [ ] New feature
+- [ ] UI/UX improvement
+- [ ] Documentation
+- [ ] Refactor or maintenance
+- [ ] Database change
 
-## Cómo probarlo / How to test
+## How to test
 
 1.
 2.
 3.
 
-## Checklist / Checklist
+## Checklist
 
-- [ ] Ejecuté `npm run build`.
-- [ ] Probé los estados de carga, error y vacío afectados.
-- [ ] Revisé la experiencia en móvil y escritorio.
-- [ ] Revisé accesibilidad básica: teclado, foco, etiquetas y contraste.
-- [ ] No incluí secretos, datos reales ni información personal.
-- [ ] Si cambié el esquema, añadí una migración nueva y documenté el impacto.
-- [ ] Actualicé la documentación si cambió la configuración o el flujo de uso.
+- [ ] I ran `npm run build`.
+- [ ] I tested the affected loading, error, and empty states.
+- [ ] I checked the experience on mobile and desktop.
+- [ ] I checked basic accessibility: keyboard, focus, labels, and contrast.
+- [ ] I did not include secrets, real data, or personal information.
+- [ ] If I changed the schema, I added a new migration and documented the impact.
+- [ ] I updated the documentation if configuration or usage changed.
 
-## Capturas o vídeo / Screenshots or video
+## Screenshots or video
 
-<!-- Obligatorio cuando cambia la interfaz. Usa datos sintéticos y anonimiza todo. -->
+<!-- Required when the UI changes. Use synthetic data and anonymize everything. -->

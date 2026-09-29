@@ -1,36 +1,36 @@
 ---
-name: Reportar un error
-about: Ayúdanos a reproducir y corregir un comportamiento inesperado
+name: Report a bug
+about: Help us reproduce and fix unexpected behavior
 title: "[Bug]: "
 labels: bug
 assignees: ''
 ---
 
-## Descripción / Description
+## Description
 
-<!-- Describe el problema de forma breve. No incluyas datos personales o sensibles. -->
+<!-- Describe the problem briefly. Do not include personal or sensitive data. -->
 
-## Pasos para reproducirlo / Steps to reproduce
+## Steps to reproduce
 
 1.
 2.
 3.
 
-## Resultado esperado / Expected result
+## Expected result
 
-## Resultado actual / Actual result
+## Actual result
 
-## Entorno / Environment
+## Environment
 
-- Navegador y versión:
-- Dispositivo y sistema operativo:
-- ¿Ocurre con Supabase o en modo demo local?:
-- Commit o versión (si aplica):
+- Browser and version:
+- Device and operating system:
+- Does it happen with Supabase or local demo mode?:
+- Commit or version (if applicable):
 
-## Evidencia / Evidence
+## Evidence
 
-<!-- Añade una captura o vídeo anonimizado solo si ayuda a entender el problema. -->
+<!-- Add an anonymized screenshot or video only if it helps explain the issue. -->
 
-## Información adicional / Additional context
+## Additional context
 
-<!-- Logs relevantes, contexto o posibles causas. No pegues tokens ni credenciales. -->
+<!-- Relevant logs, context, or possible causes. Never paste tokens or credentials. -->
