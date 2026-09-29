@@ -1,6 +1,16 @@
 /* SOPHENA brand layer */
 .sophena-mark { background:linear-gradient(135deg,#A78BFA,#75D6C4); box-shadow:0 5px 18px #A78BFA40; }
 .sophena-mark svg { width:80%; height:80%; fill:none; stroke:#fff; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+.language-switch { position:fixed; z-index:120; top:18px; right:22px; display:flex; align-items:center; gap:7px; padding:6px 9px; color:#AAA4B4; background:#15121Cdd; border:1px solid #ffffff1c; border-radius:999px; box-shadow:0 10px 28px #0005; backdrop-filter:blur(16px); font-size:9px; font-weight:800; letter-spacing:.08em; cursor:pointer; user-select:none; }
+.language-switch:hover { color:#F7F5FA; border-color:#A78BFA88; }
+.language-switch input { position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; }
+.language-switch-label { min-width:16px; text-align:center; }
+.language-switch input:checked ~ .language-switch-label:first-of-type,.language-switch input:not(:checked) ~ .language-switch-label:last-of-type { color:#746E7D; }
+.language-switch-track { position:relative; display:inline-flex; width:31px; height:18px; padding:2px; border-radius:999px; background:#746E7D66; transition:.2s ease; }
+.language-switch-track span { width:14px; height:14px; border-radius:50%; background:#F7F5FA; box-shadow:0 2px 6px #0006; transform:translateX(0); transition:.2s ease; }
+.language-switch input:checked ~ .language-switch-track { background:linear-gradient(135deg,#A78BFA,#75D6C4); }
+.language-switch input:checked ~ .language-switch-track span { transform:translateX(13px); background:#0D0B12; }
+.language-switch input:focus-visible ~ .language-switch-track { outline:2px solid #A78BFA; outline-offset:3px; }
 .surface-card { background:linear-gradient(145deg,#211C2C,#15121C); }
 .button-primary { background:linear-gradient(135deg,#A78BFA,#75D6C4); color:#15121C; box-shadow:0 10px 28px #A78BFA35; }
 .page-dark { background:radial-gradient(circle at 85% 15%,#A78BFA22,transparent 32%),var(--bg); }

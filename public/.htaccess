@@ -1,0 +1,16 @@
+RewriteEngine On
+
+# Permite que Apache/LiteSpeed sirva primero archivos y carpetas reales.
+Options -MultiViews
+DirectoryIndex index.html
+
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Rutas localizadas: cada idioma usa su documento HTML inicial.
+RewriteRule ^es(?:/.*)?$ /es/index.html [L]
+RewriteRule ^en(?:/.*)?$ /en/index.html [L]
+
+# Fallback para la SPA principal y rutas públicas sin prefijo de idioma.
+RewriteRule ^ index.html [L]

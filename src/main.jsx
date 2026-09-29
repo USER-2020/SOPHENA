@@ -11,6 +11,7 @@ import {
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { dataApi } from './services/api';
 import { brand, brandTheme } from './config/brand';
+import { LanguageProvider, LanguageSwitch } from './i18n';
 import './styles.css';
 import './rebrand.css';
 import './responsive.css';
@@ -70,7 +71,7 @@ function ProgressRing({ value, size = 112, stroke = 9, color = '#42d6a4', childr
 function AnimatedNumber({ value, suffix = '' }) { return <motion.span initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: .25 }}>{value}{suffix}</motion.span>; }
 
 function App() {
-  return <><ThemeController/><SplashScreen/><Routes><Route path="/" element={<Navigate to="/welcome" replace />} /><Route path="/welcome" element={<Welcome />} /><Route path="/login" element={<AuthWithRecovery />} /><Route path="/forgot-password" element={<ForgotPassword />} /><Route path="/reset-password" element={<ResetPassword />} /><Route path="/register" element={<RegisterConnectedV2 />} /><Route path="/onboarding" element={<Onboarding />} /><Route path="/app/*" element={<AppShellWithMenu />} /><Route path="/feed" element={<FeedPage />} /><Route path="/super-admin/*" element={<SuperAdminShellV2 />} /></Routes></>;
+  return <><LanguageSwitch/><ThemeController/><SplashScreen/><Routes><Route path="/" element={<Navigate to="/welcome" replace />} /><Route path="/welcome" element={<Welcome />} /><Route path="/login" element={<AuthWithRecovery />} /><Route path="/forgot-password" element={<ForgotPassword />} /><Route path="/reset-password" element={<ResetPassword />} /><Route path="/register" element={<RegisterConnectedV2 />} /><Route path="/onboarding" element={<Onboarding />} /><Route path="/app/*" element={<AppShellWithMenu />} /><Route path="/feed" element={<FeedPage />} /><Route path="/super-admin/*" element={<SuperAdminShellV2 />} /></Routes></>;
 }
 
 function ThemeController() {
@@ -774,4 +775,5 @@ function ActionSheetConnectedLegacy({ close }) {
 
 function ActionSheet({ close }) { return <ActionSheetConnected close={close}/>; }
 
-createRoot(document.getElementById('root')).render(<BrowserRouter><App /></BrowserRouter>);
+const languageBase = window.location.pathname.match(/^\/(es|en)(?=\/|$)/)?.[0] || '';
+createRoot(document.getElementById('root')).render(<LanguageProvider><BrowserRouter basename={languageBase}><App /></BrowserRouter></LanguageProvider>);

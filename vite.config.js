@@ -1,9 +1,21 @@
 import { defineConfig } from 'vite';
+import { fileURLToPath } from 'node:url';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import { brand } from './src/config/brand.js';
 
+const projectRoot = fileURLToPath(new URL('.', import.meta.url));
+
 export default defineConfig({
+  build: {
+    rollupOptions: {
+      input: {
+        main: `${projectRoot}/index.html`,
+        es: `${projectRoot}/es/index.html`,
+        en: `${projectRoot}/en/index.html`
+      }
+    }
+  },
   server: {
     host: true,
     allowedHosts: ['.trycloudflare.com']

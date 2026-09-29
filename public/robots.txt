@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# Public discovery resources
+Sitemap: https://sophena.online/sitemap.xml
+
+# Machine-readable project context for AI search and assistants
+Llms-txt: https://sophena.online/llms.txt

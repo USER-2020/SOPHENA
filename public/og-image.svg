@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">SOPHENA — Entiende. Decide. Avanza.</title>
+  <desc id="desc">Una plataforma privada para entender hábitos y construir cambios sostenibles.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0D0B12"/>
+      <stop offset="1" stop-color="#211C2C"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#A78BFA"/>
+      <stop offset="1" stop-color="#75D6C4"/>
+    </linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="28"/></filter>
+  </defs>
+  <rect width="1200" height="630" rx="32" fill="url(#bg)"/>
+  <circle cx="990" cy="110" r="180" fill="#A78BFA" opacity=".16" filter="url(#glow)"/>
+  <circle cx="1030" cy="505" r="150" fill="#75D6C4" opacity=".13" filter="url(#glow)"/>
+  <g transform="translate(92 105)">
+    <rect width="74" height="74" rx="24" fill="url(#accent)"/>
+    <path d="M53 22c-7-7-17-10-28-10-17 0-27 7-27 20 0 14 10 18 27 21 14 3 21 6 21 14 0 9-10 15-21 15-11 0-20-4-28-11" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="53" cy="22" r="4" fill="#fff"/>
+  </g>
+  <text x="190" y="160" fill="#F7F5FA" font-family="Arial, Helvetica, sans-serif" font-size="38" font-weight="700" letter-spacing="8">SOPHENA</text>
+  <text x="96" y="305" fill="#F7F5FA" font-family="Arial, Helvetica, sans-serif" font-size="66" font-weight="700">Entiende. Decide.</text>
+  <text x="96" y="382" fill="#75D6C4" font-family="Arial, Helvetica, sans-serif" font-size="66" font-weight="700">Avanza.</text>
+  <text x="100" y="470" fill="#AAA4B4" font-family="Arial, Helvetica, sans-serif" font-size="24">Entiende tus hábitos · registra tu proceso · celebra cada avance</text>
+  <g transform="translate(850 230)" fill="none" stroke="url(#accent)" opacity=".9">
+    <ellipse cx="120" cy="100" rx="190" ry="62" stroke-width="2" transform="rotate(-20 120 100)"/>
+    <ellipse cx="120" cy="100" rx="190" ry="62" stroke-width="2" transform="rotate(35 120 100)"/>
+    <circle cx="120" cy="100" r="48" stroke-width="3"/>
+    <circle cx="145" cy="70" r="8" fill="#75D6C4" stroke="none"/>
+  </g>
+</svg>
