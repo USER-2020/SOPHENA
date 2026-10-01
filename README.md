@@ -105,6 +105,16 @@ El README incluye una preview estática para que las personas puedan entender la
 - Supabase Auth, Postgres, RLS y Edge Functions
 - `vite-plugin-pwa` para la experiencia instalable
 
+## Design & UX
+
+Sophena mantiene un sistema de diseño y reglas de UI/UX para agentes y contribuidores:
+
+- [`docs/DESIGN_SYSTEM.md`](docs/DESIGN_SYSTEM.md)
+- [`docs/UX_FLOWS.md`](docs/UX_FLOWS.md)
+- [`.agents/skills/apple-product-ui-ux/SKILL.md`](.agents/skills/apple-product-ui-ux/SKILL.md)
+
+El sistema está inspirado en principios de producto como claridad, jerarquía, calma, accesibilidad y progressive disclosure, adaptados a la identidad propia de Sophena.
+
 ## Requisitos
 
 - Node.js 20 o superior

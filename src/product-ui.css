@@ -1,0 +1,82 @@
+/* Sophena product layer: shared visual rules for the existing product surfaces. */
+:root {
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", Inter, system-ui, sans-serif;
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+  --space-5: 20px; --space-6: 24px; --space-7: 32px; --space-8: 40px;
+  --radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px; --radius-xl: 24px;
+  --shadow-soft: 0 18px 48px rgba(0, 0, 0, .16);
+  --shadow-float: 0 24px 72px rgba(0, 0, 0, .28);
+  --text: var(--text-primary, #f7f5fa);
+  --surface-2: var(--surface-elevated, var(--card));
+}
+
+html { font-family: var(--font-sans); color-scheme: dark; }
+body { color: var(--text); background: var(--bg); }
+button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+button, a { min-height: 44px; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--green); outline-offset: 3px;
+}
+
+.logo { letter-spacing: .14em; }
+.logo-mark { border-radius: var(--radius-md); box-shadow: 0 8px 24px color-mix(in srgb, var(--purple) 28%, transparent); }
+.eyebrow, .card-kicker { letter-spacing: .12em; }
+.button { min-height: 48px; padding-inline: 20px; border-radius: var(--radius-md); transition: transform 180ms ease, background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease; }
+.button:hover { transform: translateY(-1px); }
+.button:active { transform: translateY(0); }
+.button-primary { color: #17121f; background: var(--green); box-shadow: 0 10px 24px color-mix(in srgb, var(--green) 18%, transparent); }
+.button-primary:hover { background: color-mix(in srgb, var(--green) 88%, white); }
+.button-secondary { background: color-mix(in srgb, var(--surface) 70%, white 4%); border-color: color-mix(in srgb, var(--border) 75%, white 8%); }
+
+.surface-card { background: var(--surface); border: 1px solid color-mix(in srgb, var(--border) 85%, white 4%); border-radius: var(--radius-lg); box-shadow: var(--shadow-soft); }
+.page-content { max-width: 1200px; padding-top: 44px; }
+.app-main { background: color-mix(in srgb, var(--bg) 92%, var(--purple) 8%); }
+.desktop-header { height: 88px; background: color-mix(in srgb, var(--bg) 86%, transparent); }
+.sidebar { background: color-mix(in srgb, var(--bg) 92%, var(--surface) 8%); }
+.sidebar nav button { min-height: 48px; border-radius: var(--radius-md); }
+.sidebar nav button.active { background: color-mix(in srgb, var(--green) 10%, transparent); color: var(--text); }
+.sidebar nav button.active svg { color: var(--green); }
+
+.dashboard-grid { gap: var(--space-5); }
+.streak-card, .motivation-card { min-height: 264px; padding: var(--space-7); }
+.streak-card { background: linear-gradient(145deg, color-mix(in srgb, var(--green) 14%, var(--surface)), var(--surface)); }
+.motivation-card { background: linear-gradient(145deg, color-mix(in srgb, var(--purple) 18%, var(--surface)), var(--surface)); }
+.section-heading { margin-top: var(--space-8); }
+.section-heading h3 { font-size: 18px; }
+.stat-card { min-height: 136px; border-radius: var(--radius-lg); }
+.checkin-card { margin-top: var(--space-6); border-color: color-mix(in srgb, var(--green) 20%, var(--border)); }
+.chart-card, .calendar-card, .summary-highlight, .weekly-card { border-radius: var(--radius-lg); }
+.page-intro h1, .mobile-page-title h1, .auth-content h1, .wizard-content h1 { letter-spacing: -.055em; }
+.page-intro p, .mobile-page-title p, .auth-content p, .wizard-intro { max-width: 54ch; line-height: 1.65; }
+.tabs button { min-height: 44px; }
+.achievement-card, .reward-card { border-radius: var(--radius-lg); }
+
+.action-sheet, .profile-edit-modal, .habit-manager-modal { background: var(--surface-2); border-radius: var(--radius-xl) var(--radius-xl) 0 0; box-shadow: var(--shadow-float); }
+.sheet-backdrop, .profile-edit-backdrop, .habit-manager-backdrop { background: rgba(5, 4, 9, .72); }
+.action-grid button, .wide-choice, .habit-choice, .reason-choice { min-height: 64px; border-radius: var(--radius-md); }
+.action-grid button:hover, .wide-choice:hover, .habit-choice:hover, .reason-choice:hover { border-color: color-mix(in srgb, var(--green) 46%, var(--border)); }
+.sheet-field input, .sheet-field select, .sheet-field textarea, .auth-content input, .wizard-content input, .wizard-content select, .form-grid input { border-radius: var(--radius-md); background: color-mix(in srgb, var(--bg) 72%, white 3%); }
+.form-error { border-left: 3px solid var(--danger); padding-left: 12px; }
+
+.admin-layout { background: var(--bg); }
+.admin-sidebar { background: color-mix(in srgb, var(--bg) 92%, var(--surface) 8%); }
+.admin-sidebar nav button { min-height: 46px; border-radius: var(--radius-md); }
+.admin-sidebar nav button.active { background: color-mix(in srgb, var(--green) 10%, transparent); }
+.admin-header { min-height: 88px; }
+.admin-form, .admin-list-row, .admin-overview-card, .admin-stat-card { border-radius: var(--radius-lg); }
+.icon-button, .circle-arrow { min-width: 44px; min-height: 44px; }
+.icon-button:hover, .circle-arrow:hover { background: color-mix(in srgb, var(--green) 12%, transparent); color: var(--text); }
+.bottom-nav { height: 76px; background: color-mix(in srgb, var(--bg) 84%, transparent); }
+
+@media (max-width: 760px) {
+  .page-content { padding: 28px 16px 36px; }
+  .streak-card, .motivation-card { padding: 20px; }
+  .section-heading { margin-top: 32px; }
+  .action-sheet { max-height: calc(100svh - 12px); padding-bottom: max(24px, env(safe-area-inset-bottom)); }
+  .mobile-page-title { margin-bottom: 28px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
+  .button:hover { transform: none; }
+}

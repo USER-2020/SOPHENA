@@ -139,3 +139,101 @@ button, a { touch-action:manipulation; }
 @media (prefers-reduced-motion:reduce) {
   .orbit-art,.splash-orbit { transform:none!important; animation:none!important; }
 }
+
+/* Product UI layer: calm hierarchy, predictable states and accessible motion. */
+:root {
+  --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px;
+  --space-5:20px; --space-6:24px; --space-7:32px; --space-8:40px;
+  --radius-sm:8px; --radius-md:12px; --radius-lg:16px; --radius-xl:24px;
+  --focus-ring: 0 0 0 3px #A78BFA44;
+  --shadow-soft: 0 12px 32px #0000001c;
+  --motion-fast: 140ms; --motion-base: 220ms; --motion-slow: 360ms;
+}
+
+/* Keep interaction states legible without relying on color alone. */
+:where(button, a, input, select, textarea):focus-visible {
+  outline: 2px solid var(--purple);
+  outline-offset: 3px;
+}
+:where(button, a):focus:not(:focus-visible) { outline: none; }
+:where(button, input, select, textarea):disabled { cursor: not-allowed; opacity: .58; }
+:where(button, a, .icon-button, .circle-arrow) { min-height: 44px; }
+.icon-button, .circle-arrow { min-width:44px; min-height:44px; }
+.button { min-height:48px; border-radius:var(--radius-md); transition:transform var(--motion-fast) ease, box-shadow var(--motion-base) ease, background var(--motion-base) ease; }
+.button:hover { transform:translateY(-1px); }
+.button:active { transform:translateY(0) scale(.98); }
+.button-primary:focus-visible { box-shadow:var(--focus-ring), 0 10px 28px #A78BFA35; }
+
+/* Shared visual language across personal and admin modules. */
+.surface-card,
+.stat-card,
+.settings-list,
+.impact-card,
+.calendar-card,
+.summary-highlight,
+.weekly-card,
+.chart-card,
+.insight-card,
+.achievement-card,
+.reward-card,
+.checkin-card,
+.milestones { border-radius:var(--radius-lg); box-shadow:var(--shadow-soft); }
+.page-content, .admin-content { scroll-padding-top:24px; }
+.page-intro { gap:var(--space-6); }
+.section-heading { margin-top:var(--space-8); }
+.section-heading h3 { font-size:18px; }
+.card-kicker, .eyebrow { line-height:1.4; }
+.text-button, .ghost-link { min-height:44px; }
+.text-button:hover, .ghost-link:hover { text-decoration:underline; text-underline-offset:4px; }
+
+/* Forms: labels carry the meaning; controls provide one consistent focus treatment. */
+:where(.auth-content, .wizard-content, .sheet-field, .reward-form, .habit-manager-form, .admin-form, .admin-settings-editor) label { line-height:1.45; }
+:where(input, select, textarea) { min-height:48px; border-radius:var(--radius-md); }
+:where(input, select, textarea):focus { border-color:var(--purple)!important; box-shadow:var(--focus-ring); }
+textarea { min-height:96px; padding:13px 15px; resize:vertical; }
+.form-error, .success-message, .save-message, .profile-save-message { border-radius:var(--radius-md); line-height:1.5; }
+.form-error { border-left:3px solid var(--danger); padding:10px 12px; background:#E17C8C12; }
+.success-message, .save-message, .profile-save-message { border-left:3px solid var(--success); padding:10px 12px; background:#78CFA412; }
+
+/* Sheets and overlays express spatial hierarchy and remain usable on touch screens. */
+.sheet-backdrop, .profile-edit-backdrop, .habit-manager-backdrop { background:#08070dcc; backdrop-filter:blur(10px); }
+.action-sheet, .profile-edit-modal, .habit-manager-modal { border:1px solid #ffffff18; box-shadow:0 24px 80px #0008; }
+.sheet-handle { width:40px; height:4px; margin:4px auto 20px; background:#ffffff2b; border-radius:999px; }
+.action-grid button { min-height:96px; border-radius:var(--radius-lg); transition:background var(--motion-base) ease, border-color var(--motion-base) ease, transform var(--motion-fast) ease; }
+.action-grid button:hover { transform:translateY(-2px); }
+.action-grid button:active { transform:scale(.98); }
+
+/* Navigation stays quiet, but the current location remains explicit. */
+.sidebar nav button, .bottom-nav button { min-height:44px; }
+.sidebar nav button.active { box-shadow:inset 3px 0 var(--green); }
+.bottom-nav { padding-bottom:max(8px, env(safe-area-inset-bottom)); }
+.mobile-header { padding-top:max(12px, env(safe-area-inset-top)); }
+
+/* Charts and dense grids should never force horizontal scrolling. */
+.chart-wrap, .recharts-responsive-container { min-width:0; }
+.stats-grid, .insights-grid, .achievement-grid, .reward-grid { align-items:stretch; }
+.achievement-card, .reward-card, .insight-card { min-width:0; }
+
+@media (max-width:760px) {
+  .page-content { padding-top:24px; padding-bottom:max(88px, calc(60px + env(safe-area-inset-bottom))); }
+  .desktop-header { display:none; }
+  .mobile-header { display:flex; min-height:64px; align-items:center; justify-content:space-between; padding-inline:16px; border-bottom:1px solid var(--border); }
+  .streak-card, .motivation-card { min-height:246px; padding:20px; }
+  .section-heading { margin-top:28px; }
+  .checkin-card { align-items:flex-start; flex-wrap:wrap; padding:16px; }
+  .checkin-card .button { min-height:44px; }
+  .sheet-field { gap:8px; }
+}
+
+@media (max-width:430px) {
+  .page-content { padding-inline:14px; }
+  .surface-card, .stat-card { border-radius:var(--radius-md); }
+  .streak-top h3 { font-size:46px; }
+  .section-heading h3 { font-size:16px; }
+  .action-sheet, .profile-edit-modal, .habit-manager-modal { width:100%; }
+}
+
+@media (prefers-reduced-motion:reduce) {
+  *, *::before, *::after { animation-duration:.01ms!important; animation-iteration-count:1!important; scroll-behavior:auto!important; transition-duration:.01ms!important; }
+  .button:hover, .action-grid button:hover, .sidebar nav button:hover { transform:none; }
+}
