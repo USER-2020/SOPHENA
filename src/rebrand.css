@@ -14,7 +14,7 @@
 .surface-card { background:linear-gradient(145deg,#211C2C,#15121C); }
 .button-primary { background:linear-gradient(135deg,#A78BFA,#75D6C4); color:#15121C; box-shadow:0 10px 28px #A78BFA35; }
 .page-dark { background:radial-gradient(circle at 85% 15%,#A78BFA22,transparent 32%),var(--bg); }
-.sophena-splash { position:fixed; z-index:100; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; background:#0D0B12; color:#AAA4B4; animation:splash-in .35s ease both; }
+.sophena-splash { position:fixed; z-index:100; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; background:#0D0B12; color:#AAA4B4; animation:splash-in .35s ease both; pointer-events:none; }
 .sophena-splash .logo { font-size:20px; }
 .sophena-splash p { color:#F7F5FA; font-size:13px; letter-spacing:.08em; margin:15px 0 0; }
 .sophena-splash>span { color:#746E7D; font-size:11px; }
@@ -243,4 +243,3 @@
 .achievement-shortcut-row b { color:#F3C677; }
 .achievement-shortcut-row:hover .setting-icon { color:#15121C; background:linear-gradient(135deg,#F3C677,#F0AFA3); }
 @media (max-width:760px) { .admin-auth-page { padding:16px; align-items:start; padding-top:42px; }.admin-auth-card { padding:25px 20px; }.admin-auth-card h1 { font-size:31px; } }
-

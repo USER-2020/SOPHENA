@@ -153,14 +153,22 @@
 }
 
 html {
+  height: 100%;
   min-height: 100%;
-  overflow-x: hidden;
+  overflow-x: clip;
+  overflow-y: auto;
   -webkit-text-size-adjust: 100%;
 }
 
 body,
 #root {
   min-height: 100%;
+}
+
+body {
+  overflow-x: clip;
+  overflow-y: auto;
+  overscroll-behavior-y: auto;
 }
 
 /* Safari zooms focused controls below 16px. Keep the whole product stable on iPhone. */
@@ -274,7 +282,9 @@ body,
   .welcome-page {
     display: block;
     min-height: 100dvh;
-    overflow-x: hidden;
+    height: auto;
+    overflow: visible;
+    touch-action: pan-y;
   }
 
   .welcome-grid {
