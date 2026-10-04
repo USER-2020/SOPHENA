@@ -261,7 +261,7 @@ export function useLanguage() {
   return useContext(LanguageContext) || { language: 'es', setLanguage: () => {}, t: value => value };
 }
 
-export function LanguageSwitch() {
+export function LanguageSwitch({ embedded = false, className = '' } = {}) {
   const { language, setLanguage } = useLanguage();
   const english = language === 'en';
   const changeLanguage = nextLanguage => {
@@ -273,7 +273,8 @@ export function LanguageSwitch() {
     setLanguage(nextLanguage);
     if (nextPath !== currentPath) window.location.assign(`${nextPath}${window.location.search}${window.location.hash}`);
   };
-  return React.createElement('label', { className: 'language-switch', title: english ? 'Change language / Cambiar idioma' : 'Cambiar idioma / Change language' },
+  const switchClassName = ['language-switch', embedded ? 'language-switch-embedded' : 'language-switch-global', className].filter(Boolean).join(' ');
+  return React.createElement('label', { className: switchClassName, title: english ? 'Change language / Cambiar idioma' : 'Cambiar idioma / Change language' },
     React.createElement('span', { className: 'language-switch-label' }, 'ES'),
     React.createElement('input', { type: 'checkbox', role: 'switch', 'aria-label': english ? 'Switch to Spanish' : 'Cambiar a inglés', checked: english, onChange: event => changeLanguage(event.target.checked ? 'en' : 'es') }),
     React.createElement('span', { className: 'language-switch-track' }, React.createElement('span')),

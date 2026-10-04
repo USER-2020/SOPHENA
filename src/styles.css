@@ -240,3 +240,40 @@
 .quote-dots i { width:5px; height:5px; border-radius:50%; background:#ffffff25; transition:.25s ease; }
 .quote-dots i.active { width:20px; border-radius:9px; background:var(--green); }
 @media (max-width:760px) { .quote-rotator p { font-size:35px; } }
+
+.notifications-intro { align-items:center; }
+.notification-inbox { width:min(760px,100%); margin-bottom:18px; padding:8px 22px; }
+.header-actions>button.notification-button { position:relative; display:grid; place-items:center; flex:none; width:44px; min-width:44px; height:44px; padding:0; color:#aeb7c5; border:1px solid var(--border); border-radius:14px; background:var(--surface); transition:color .2s ease, border-color .2s ease, background .2s ease, transform .2s ease; }
+.header-actions>button.notification-button:hover { color:#fff; border-color:#ffffff30; background:var(--card); transform:translateY(-1px); }
+.header-actions>button.notification-button:focus-visible { outline:2px solid color-mix(in srgb, var(--green) 75%, transparent); outline-offset:3px; }
+.notification-badge { position:absolute; top:-6px; right:-6px; display:grid; place-items:center; min-width:19px; height:19px; padding:0 5px; color:#10231f; border:2px solid var(--bg); border-radius:999px; background:var(--green); font-size:9px; font-weight:900; line-height:1; }
+.notification-count { padding:6px 9px; color:var(--green); border:1px solid #42d6a433; border-radius:999px; background:#42d6a412; font-size:10px; font-weight:800; }
+.notification-list { display:grid; }
+.notification-item { display:flex; align-items:center; gap:13px; width:100%; min-height:78px; padding:15px 0; color:inherit; border-bottom:1px solid var(--border); background:none; text-align:left; }
+.notification-item:last-child { border-bottom:0; }
+.notification-item:hover { background:#ffffff03; }
+.notification-item:focus-visible { outline:2px solid color-mix(in srgb, var(--green) 70%, transparent); outline-offset:5px; border-radius:8px; }
+.notification-item-icon { display:grid; place-items:center; flex:none; width:40px; height:40px; color:#a99bff; border-radius:12px; background:#7c5cff18; }
+.notification-item.is-unread .notification-item-icon { color:var(--green); background:#42d6a414; }
+.notification-item-copy { min-width:0; flex:1; }
+.notification-item-copy b, .notification-item-copy small, .notification-item-copy time { display:block; }
+.notification-item-copy b { overflow:hidden; font-size:12px; text-overflow:ellipsis; white-space:nowrap; }
+.notification-item-copy small { margin-top:4px; overflow:hidden; color:var(--muted); font-size:10px; line-height:1.45; text-overflow:ellipsis; white-space:nowrap; }
+.notification-item-copy time { margin-top:5px; color:#687384; font-size:9px; }
+.notification-unread-dot { flex:none; width:7px; height:7px; border-radius:50%; background:var(--green); box-shadow:0 0 0 4px #42d6a414; }
+.notifications-empty { padding:20px 0; color:var(--muted); font-size:11px; }
+.notifications-hero-icon { display:grid; place-items:center; flex:none; width:56px; height:56px; color:var(--green); background:linear-gradient(145deg,#1d3838,#182129); }
+.notifications-panel { width:min(760px,100%); padding:8px 22px; }
+.notifications-panel-heading { padding:16px 0 13px; border-bottom:1px solid var(--border); }
+.notifications-panel-heading h2 { margin:8px 0 0; font-size:18px; letter-spacing:-.04em; }
+.notifications-status { padding:20px 0; color:var(--muted); font-size:11px; }
+.notification-row { display:flex; align-items:center; gap:14px; min-height:78px; padding:16px 0; border-bottom:1px solid var(--border); cursor:pointer; }
+.notification-row:last-child { border-bottom:0; }
+.notification-row-icon { display:grid; place-items:center; flex:none; width:40px; height:40px; color:var(--green); border-radius:12px; background:#42d6a414; }
+.notification-copy { min-width:0; flex:1; }
+.notification-copy b, .notification-copy small { display:block; }
+.notification-copy b { font-size:12px; }
+.notification-copy small { margin-top:4px; color:var(--muted); font-size:10px; line-height:1.5; }
+.notification-row input { flex:none; width:20px; height:20px; margin:0; accent-color:var(--green); }
+.notification-row:focus-within { outline:2px solid color-mix(in srgb, var(--green) 70%, transparent); outline-offset:5px; border-radius:8px; }
+@media (max-width:760px) { .notifications-intro { align-items:flex-start; }.notification-inbox { padding-inline:16px; }.notifications-hero-icon { width:48px; height:48px; }.notifications-panel { padding-inline:16px; }.notification-row { gap:11px; min-height:76px; }.notification-copy small { font-size:11px; }.notification-item-copy small { white-space:normal; } }

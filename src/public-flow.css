@@ -148,6 +148,8 @@
   --safe-right: env(safe-area-inset-right, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left: env(safe-area-inset-left, 0px);
+  --mobile-header-content-height: 64px;
+  --mobile-nav-content-height: 76px;
 }
 
 html {
@@ -167,6 +169,7 @@ body,
   select,
   textarea {
     font-size: 16px !important;
+    line-height: 1.35;
   }
 
   .page-dark,
@@ -201,31 +204,51 @@ body,
   }
 
   .app-main {
-    padding-bottom: calc(84px + var(--safe-bottom));
+    min-height: 100dvh;
+    padding-bottom: 0;
   }
 
   .mobile-header {
-    min-height: calc(64px + var(--safe-top));
+    position: sticky;
+    top: 0;
+    z-index: 15;
+    min-height: calc(var(--mobile-header-content-height) + var(--safe-top));
+    height: auto;
     padding-top: var(--safe-top);
     padding-right: max(16px, var(--safe-right));
     padding-left: max(16px, var(--safe-left));
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
   }
 
-  .page-content,
+  .mobile-header > .logo,
+  .mobile-header > .header-actions {
+    min-height: var(--mobile-header-content-height);
+  }
+
+  .page-content {
+    padding-bottom: max(24px, calc(var(--mobile-nav-content-height) + var(--safe-bottom) + 24px));
+  }
+
   .admin-content {
-    padding-bottom: max(88px, calc(60px + var(--safe-bottom)));
+    padding-bottom: max(45px, var(--safe-bottom));
   }
 
   .bottom-nav {
-    height: calc(76px + var(--safe-bottom));
-    padding-right: max(5px, var(--safe-right));
+    height: calc(var(--mobile-nav-content-height) + var(--safe-bottom));
+    min-height: calc(var(--mobile-nav-content-height) + var(--safe-bottom));
+    padding-top: 8px;
+    padding-right: max(8px, var(--safe-right));
     padding-bottom: max(8px, var(--safe-bottom));
-    padding-left: max(5px, var(--safe-left));
+    padding-left: max(8px, var(--safe-left));
   }
 
   .sheet-backdrop,
   .profile-edit-backdrop,
   .habit-manager-backdrop {
+    padding-top: var(--safe-top);
+    padding-bottom: var(--safe-bottom);
     padding-right: var(--safe-right);
     padding-left: var(--safe-left);
   }
@@ -243,5 +266,62 @@ body,
     padding-right: max(16px, var(--safe-right));
     padding-bottom: max(24px, var(--safe-bottom));
     padding-left: max(16px, var(--safe-left));
+  }
+}
+
+/* The public welcome top bar needs its own row for the language control on small screens. */
+@media (max-width: 760px) {
+  .welcome-page {
+    display: block;
+    min-height: 100dvh;
+    overflow-x: hidden;
+  }
+
+  .welcome-grid {
+    margin: 64px auto 0;
+  }
+
+  .welcome-copy {
+    padding-top: 0;
+  }
+
+  .orbit-art {
+    min-height: 300px;
+    margin: 24px -18px 0;
+    transform: scale(.68);
+  }
+
+  .welcome-footer {
+    margin-top: 28px;
+  }
+
+  body:has(.welcome-page) .language-switch {
+    position: absolute;
+    top: max(76px, calc(var(--safe-top) + 52px));
+    right: max(16px, var(--safe-right));
+  }
+
+  body:has(.welcome-page) .welcome-grid {
+    margin-top: 64px;
+  }
+
+  body:has(.app-layout) .language-switch-global {
+    display: none;
+  }
+
+  .mobile-header .language-switch-embedded {
+    position: static;
+    z-index: auto;
+    flex: 0 0 auto;
+    min-height: 44px;
+    padding: 10px 7px;
+    margin: 0;
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .mobile-header .header-actions {
+    gap: 10px;
   }
 }

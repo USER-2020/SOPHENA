@@ -42,6 +42,9 @@ create table if not exists public.savings (
 create table if not exists public.notification_preferences (
   user_id uuid primary key references public.profiles(id) on delete cascade, weekly_summary boolean not null default true, monthly_summary boolean not null default true, checkin_reminders boolean not null default true, achievements boolean not null default true, goals boolean not null default true, frequency text not null default 'weekly', reminder_day text default 'monday', reminder_time time default '20:00', timezone text default 'America/Bogota', updated_at timestamptz not null default now()
 );
+create table if not exists public.user_notifications (
+  id uuid primary key default gen_random_uuid(), user_id uuid not null references public.profiles(id) on delete cascade, notification_type text not null default 'system', title text not null, body text not null, action_path text, source_type text, source_id uuid, created_at timestamptz not null default now(), read_at timestamptz
+);
 
 alter table public.profiles enable row level security;
 alter table public.habits enable row level security;
@@ -54,6 +57,7 @@ alter table public.rewards enable row level security;
 alter table public.user_rewards enable row level security;
 alter table public.savings enable row level security;
 alter table public.notification_preferences enable row level security;
+alter table public.user_notifications enable row level security;
 
 create or replace function public.is_owner(owner_id uuid) returns boolean language sql stable as $$ select auth.uid() = owner_id $$;
 drop policy if exists "profiles owner" on public.profiles;
@@ -67,6 +71,7 @@ drop policy if exists "rewards owner" on public.rewards;
 drop policy if exists "user rewards owner" on public.user_rewards;
 drop policy if exists "savings owner" on public.savings;
 drop policy if exists "notifications owner" on public.notification_preferences;
+drop policy if exists "user notifications owner" on public.user_notifications;
 
 create policy "profiles owner" on public.profiles for all using (id = auth.uid()) with check (id = auth.uid());
 create policy "habits owner" on public.habits for all using (is_owner(user_id)) with check (is_owner(user_id));
@@ -79,6 +84,7 @@ create policy "rewards owner" on public.rewards for all using (is_owner(user_id)
 create policy "user rewards owner" on public.user_rewards for all using (is_owner(user_id)) with check (is_owner(user_id));
 create policy "savings owner" on public.savings for all using (is_owner(user_id)) with check (is_owner(user_id));
 create policy "notifications owner" on public.notification_preferences for all using (is_owner(user_id)) with check (is_owner(user_id));
+create policy "user notifications owner" on public.user_notifications for all using (is_owner(user_id)) with check (is_owner(user_id));
 
 create or replace function public.handle_new_user() returns trigger language plpgsql security definer set search_path = public as $$
 begin insert into public.profiles (id, full_name) values (new.id, coalesce(new.raw_user_meta_data->>'full_name', '')); return new; end; $$;

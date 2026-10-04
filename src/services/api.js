@@ -27,6 +27,7 @@ const defaults = {
     { id: 'demo-headphones', name: 'Audífonos', points_cost: 2000, description: 'Tu próxima playlist', is_redeemed: false },
   ],
   notifications: { weekly_summary: true, monthly_summary: true, checkin_reminders: true, achievements: true, goals: true },
+  userNotifications: [],
   achievements: defaultAchievementCatalog,
   userAchievements: [],
   pointTransactions: [],
@@ -60,8 +61,13 @@ async function currentUser() {
 
 export const authService = {
   async signIn(email, password) {
-    if (!supabaseConfigured) return { user: localUser(), error: null, demo: true };
+    if (!supabaseConfigured) {
+      const user = localUser();
+      await notificationService.createSessionNotification().catch(() => {});
+      return { user, error: null, demo: true };
+    }
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (!error && data.user) await notificationService.createSessionNotification().catch(() => {});
     return { user: data.user, error };
   },
   async signUp({ email, password, fullName, onboarding }) {
@@ -69,9 +75,11 @@ export const authService = {
       const state = readLocal();
       state.profile = { ...state.profile, full_name: fullName || state.profile.full_name, email };
       writeLocal(state);
+      await notificationService.createSessionNotification().catch(() => {});
       return { user: state.profile, error: null, demo: true };
     }
     const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: fullName, ...(onboarding ? { sophena_onboarding: onboarding } : {}) } } });
+    if (!error && data.session) await notificationService.createSessionNotification().catch(() => {});
     return { user: data.user, session: data.session, error };
   },
   async requestPasswordReset(email) {
@@ -193,8 +201,59 @@ export const userAchievementService = {
   },
 };
 export const notificationService = {
-  get: async () => { if (!supabaseConfigured) return readLocal().notifications; const user = await currentUser(); const { data, error } = await supabase.from('notification_preferences').select('*').eq('user_id', user.id).single(); if (error) throw error; return data; },
-  update: async payload => { if (!supabaseConfigured) { const state = readLocal(); state.notifications = { ...state.notifications, ...payload }; writeLocal(state); return state.notifications; } const user = await currentUser(); return update('notification_preferences', user.id, payload, 'notifications'); },
+  create: async payload => insert('user_notifications', payload, 'userNotifications'),
+  list: async () => {
+    const user = await currentUser();
+    return list('user_notifications', 'userNotifications', { userColumn: 'user_id', userId: user?.id, order: 'created_at' });
+  },
+  unreadCount: async () => {
+    const user = await currentUser();
+    if (!supabaseConfigured) return (readLocal().userNotifications || []).filter(item => item.user_id === user?.id && !item.read_at).length;
+    const { count, error } = await supabase.from('user_notifications').select('id', { count: 'exact', head: true }).eq('user_id', user.id).is('read_at', null);
+    if (error) throw error;
+    return count || 0;
+  },
+  markRead: async id => {
+    const user = await currentUser();
+    if (!supabaseConfigured) {
+      const state = readLocal();
+      state.userNotifications = (state.userNotifications || []).map(item => item.id === id && item.user_id === user?.id ? { ...item, read_at: new Date().toISOString() } : item);
+      writeLocal(state);
+      window.dispatchEvent(new Event('sophena:notifications-updated'));
+      return state.userNotifications.find(item => item.id === id);
+    }
+    const { data, error } = await supabase.from('user_notifications').update({ read_at: new Date().toISOString() }).eq('id', id).eq('user_id', user.id).select().single();
+    if (error) throw error;
+    window.dispatchEvent(new Event('sophena:notifications-updated'));
+    return data;
+  },
+  createSessionNotification: async () => {
+    const user = await currentUser();
+    if (!user) return null;
+    return notificationService.create({ user_id: user.id, notification_type: 'session', title: 'Tu sesión está lista', body: 'SOPHENA está aquí para acompañarte en tu proceso.', action_path: '/app', source_type: 'session' });
+  },
+  createFeedNotification: async post => {
+    if (supabaseConfigured || !post?.id) return null;
+    const user = localUser();
+    const state = readLocal();
+    const exists = (state.userNotifications || []).some(item => item.source_type === 'feed_post' && item.source_id === post.id && item.user_id === user?.id);
+    if (exists) return null;
+    return notificationService.create({ user_id: user?.id, notification_type: 'feed', title: post.title, body: post.excerpt || post.content || 'Hay una nueva novedad en SOPHENA.', action_path: '/feed', source_type: 'feed_post', source_id: post.id });
+  },
+  get: async () => {
+    if (!supabaseConfigured) return { ...defaults.notifications, ...readLocal().notifications };
+    const user = await currentUser();
+    const { data, error } = await supabase.from('notification_preferences').select('*').eq('user_id', user.id).maybeSingle();
+    if (error) throw error;
+    return data || { user_id: user.id, ...defaults.notifications };
+  },
+  update: async payload => {
+    if (!supabaseConfigured) { const state = readLocal(); state.notifications = { ...state.notifications, ...payload }; writeLocal(state); return state.notifications; }
+    const user = await currentUser();
+    const { data, error } = await supabase.from('notification_preferences').upsert({ user_id: user.id, ...payload, updated_at: new Date().toISOString() }, { onConflict: 'user_id' }).select().single();
+    if (error) throw error;
+    return data;
+  },
 };
 export const adminService = {
   listUsers: async () => { if (supabaseConfigured) { const { data, error } = await supabase.rpc('list_admin_users'); if (error) throw error; return data || []; } return readLocal().adminUsers || [{ id: 'demo-user', email: readLocal().profile.email, full_name: readLocal().profile.full_name, role: readLocal().profile.role, points: readLocal().profile.points, created_at: new Date().toISOString() }]; },
@@ -232,8 +291,8 @@ export const adminService = {
     const state = readLocal(); state.appThemes = (state.appThemes || []).map(item => ({ ...item, is_active: item.id === id })); writeLocal(state); return state.appThemes.find(item => item.id === id);
   },
   listFeedPosts: () => list('app_feed_posts', 'feedPosts', { order: 'published_at' }),
-  createFeedPost: payload => insert('app_feed_posts', payload, 'feedPosts'),
-  updateFeedPost: (id, payload) => update('app_feed_posts', id, payload, 'feedPosts'),
+  createFeedPost: async payload => { const item = await insert('app_feed_posts', payload, 'feedPosts'); if (!supabaseConfigured && item.published) await notificationService.createFeedNotification(item); return item; },
+  updateFeedPost: async (id, payload) => { const item = await update('app_feed_posts', id, payload, 'feedPosts'); if (!supabaseConfigured && item.published) await notificationService.createFeedNotification(item); return item; },
   removeFeedPost: id => remove('app_feed_posts', id, 'feedPosts'),
 };
 
