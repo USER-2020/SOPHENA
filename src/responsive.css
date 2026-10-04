@@ -1,5 +1,5 @@
 /* Responsive system: mobile-first behavior for SOPHENA */
-html { overflow-x:hidden; }
+html { overflow-x:clip; }
 body { min-width:320px; }
 button, a, input, select, textarea { -webkit-tap-highlight-color:transparent; }
 button, a { touch-action:manipulation; }
