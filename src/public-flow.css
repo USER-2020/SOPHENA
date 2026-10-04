@@ -166,8 +166,7 @@ body,
 }
 
 body {
-  overflow-x: clip;
-  overflow-y: auto;
+  overflow: visible;
   overscroll-behavior-y: auto;
 }
 

@@ -272,6 +272,7 @@
   .pwa-install-close { width:32px; height:32px; }
 }
 @media (max-width:760px) { .pwa-install-banner { grid-template-columns:40px minmax(0,1fr) 38px; gap:7px 10px; padding:10px; border-radius:17px; }.pwa-install-icon { grid-row:span 2; width:40px; height:40px; border-radius:13px; }.pwa-install-copy b { font-size:12px; }.pwa-install-copy small { font-size:9px; }.pwa-install-action { grid-column:2; justify-self:start; min-width:84px; min-height:36px; font-size:10px; }.pwa-install-close { grid-column:3; grid-row:1; width:38px; height:38px; }.pwa-help-dialog { padding:24px; } body:has(.language-switch-global) .pwa-install-banner { top:max(132px,calc(var(--safe-top) + 118px)); } body:has(.app-layout) .pwa-install-banner { top:max(76px,calc(var(--safe-top) + 72px)); } }
+@media (max-width:760px) { .pwa-install-banner { position:fixed; left:50%; right:auto; width:min(calc(100vw - 24px),360px); max-width:calc(100vw - 24px); transform:translateX(-50%); } }
 @media (prefers-reduced-motion:reduce) { .pwa-install-action { transition:none; } }
 
 .notifications-intro { align-items:center; }
