@@ -6,7 +6,7 @@ import {
   ArrowRight, Award, BarChart3, Bell, BookOpen, CalendarDays, Check, ChevronRight, CircleDollarSign,
   CircleHelp, Clock3, Flame, Footprints, Gamepad2, Gift, Goal, HeartPulse, Home, Leaf,
   LineChart, LockKeyhole, LogOut, Menu, MoreHorizontal, Plus, Rocket, Settings, ShieldCheck,
-  ShoppingBag, Sparkles, Target, Trophy, UserRound, Users, Wallet, X, Zap, Eye, EyeOff, Palette, Newspaper, Link2
+  ShoppingBag, Sparkles, Target, Trophy, UserRound, Users, Wallet, X, Zap, Eye, EyeOff, Palette, Newspaper, Link2, Share2
 } from 'lucide-react';
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import toast, { Toaster } from 'react-hot-toast';
@@ -85,7 +85,44 @@ function ProgressRing({ value, size = 112, stroke = 9, color = '#42d6a4', childr
 function AnimatedNumber({ value, suffix = '' }) { const reduceMotion = useReducedMotion(); return <motion.span initial={reduceMotion ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={reduceMotion ? { duration: 0 } : { delay: .25 }}>{value}{suffix}</motion.span>; }
 
 function App() {
-  return <><LanguageSwitch/><ThemeController/><SplashScreen/><Routes><Route path="/" element={<Navigate to="/welcome" replace />} /><Route path="/welcome" element={<Welcome />} /><Route path="/login" element={<AuthWithRecovery />} /><Route path="/forgot-password" element={<ForgotPassword />} /><Route path="/reset-password" element={<ResetPassword />} /><Route path="/register" element={<RegisterConnectedV2 />} /><Route path="/onboarding" element={<Onboarding />} /><Route path="/app/*" element={<AppShellWithMenu />} /><Route path="/feed" element={<FeedPage />} /><Route path="/super-admin/*" element={<SuperAdminShellV2 />} /></Routes><Toaster position="top-right" toastOptions={{ duration: 3200, success: { icon: '✓' }, style: { background: 'var(--card)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: '12px', boxShadow: '0 12px 32px rgba(0,0,0,.28)' } }}/></>;
+  return <><LanguageSwitch/><ThemeController/><SplashScreen/><InstallPromptBanner/><Routes><Route path="/" element={<Navigate to="/welcome" replace />} /><Route path="/welcome" element={<Welcome />} /><Route path="/login" element={<AuthWithRecovery />} /><Route path="/forgot-password" element={<ForgotPassword />} /><Route path="/reset-password" element={<ResetPassword />} /><Route path="/register" element={<RegisterConnectedV2 />} /><Route path="/onboarding" element={<Onboarding />} /><Route path="/app/*" element={<AppShellWithMenu />} /><Route path="/feed" element={<FeedPage />} /><Route path="/super-admin/*" element={<SuperAdminShellV2 />} /></Routes><Toaster position="top-right" toastOptions={{ duration: 3200, success: { icon: '✓' }, style: { background: 'var(--card)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: '12px', boxShadow: '0 12px 32px rgba(0,0,0,.28)' } }}/></>;
+}
+
+function InstallPromptBanner() {
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [visible, setVisible] = useState(false);
+  const [isIos, setIsIos] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
+  useEffect(() => {
+    const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    const ios = /iphone|ipad|ipod/i.test(window.navigator.userAgent) && !window.MSStream;
+    const dismissedUntil = Number(window.localStorage.getItem('sophena-pwa-install-dismissed-until') || 0);
+    if (standalone || dismissedUntil > Date.now()) return undefined;
+    setIsIos(ios);
+    const handleBeforeInstallPrompt = event => { event.preventDefault(); setDeferredPrompt(event); setVisible(true); };
+    const handleInstalled = () => { setVisible(false); setDeferredPrompt(null); setHelpOpen(false); };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleInstalled);
+    if (ios) setVisible(true);
+    return () => { window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt); window.removeEventListener('appinstalled', handleInstalled); };
+  }, []);
+  useEffect(() => {
+    if (!helpOpen) return undefined;
+    const handleKeyDown = event => { if (event.key === 'Escape') setHelpOpen(false); };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [helpOpen]);
+  const dismiss = () => { window.localStorage.setItem('sophena-pwa-install-dismissed-until', String(Date.now() + 7 * 24 * 60 * 60 * 1000)); setVisible(false); setHelpOpen(false); };
+  const install = async () => {
+    if (!deferredPrompt) { setHelpOpen(true); return; }
+    deferredPrompt.prompt();
+    const choice = await deferredPrompt.userChoice;
+    setDeferredPrompt(null);
+    if (choice.outcome === 'accepted') setVisible(false);
+    else dismiss();
+  };
+  if (!visible) return null;
+  return <><aside className="pwa-install-banner" role="region" aria-label="Instalar SOPHENA"><span className="pwa-install-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M23 9c-2-2-5-3-8-3-5 0-8 2-8 6 0 4 3 5 8 6 4 1 6 2 6 4s-3 4-6 4c-3 0-6-1-8-3"/><circle cx="23" cy="9" r="2"/></svg></span><span className="pwa-install-copy"><b>Instala SOPHENA en tu teléfono</b><small>Accede más rápido y lleva tu proceso contigo.</small></span><button className="pwa-install-action" type="button" onClick={install}>{isIos ? 'Ver pasos' : 'Instalar'}</button><button className="pwa-install-close" type="button" aria-label="Cerrar aviso de instalación" onClick={dismiss}><X size={22}/></button></aside>{helpOpen && <div className="pwa-help-backdrop" role="presentation" onClick={() => setHelpOpen(false)}><section className="pwa-help-dialog surface-card" role="dialog" aria-modal="true" aria-labelledby="pwa-help-title" onClick={event => event.stopPropagation()}><button className="pwa-help-close" type="button" aria-label="Cerrar instrucciones" onClick={() => setHelpOpen(false)}><X size={19}/></button><span className="pwa-help-icon"><Share2 size={20}/></span><span className="eyebrow">INSTALAR EN IPHONE</span><h2 id="pwa-help-title">Lleva SOPHENA contigo.</h2><p>En Safari, toca <b>Compartir</b> y luego elige <b>Agregar a pantalla de inicio</b>.</p><button className="button button-primary full-button" type="button" onClick={() => setHelpOpen(false)}>Entendido</button></section></div>}</>;
 }
 
 function ThemeController() {
