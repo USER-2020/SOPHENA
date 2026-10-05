@@ -33,6 +33,13 @@ function publicImageUrl(value: unknown) {
   }
 }
 
+function imageMimeType(value: string) {
+  const pathname = new URL(value).pathname.toLowerCase();
+  if (pathname.endsWith('.png')) return 'image/png';
+  if (pathname.endsWith('.webp')) return 'image/webp';
+  return 'image/jpeg';
+}
+
 function articleHtml(post: Record<string, unknown>) {
   const postTitle = plainText(post.title) || 'Novedad';
   const title = `${postTitle} — SOPHENA`;
@@ -40,6 +47,7 @@ function articleHtml(post: Record<string, unknown>) {
   const postId = encodeURIComponent(String(post.id));
   const canonicalUrl = `${siteUrl}/feed/${postId}`;
   const imageUrl = publicImageUrl(post.image_url);
+  const imageType = imageMimeType(imageUrl);
   const category = plainText(post.category) || 'Novedad';
   const publishedAt = String(post.published_at || post.created_at || new Date().toISOString());
   const modifiedAt = String(post.updated_at || publishedAt);
@@ -74,7 +82,7 @@ function articleHtml(post: Record<string, unknown>) {
     <meta property="og:locale" content="es_CO">
     <meta property="og:image" content="${escapeHtml(imageUrl)}">
     <meta property="og:image:secure_url" content="${escapeHtml(imageUrl)}">
-    <meta property="og:image:type" content="image/jpeg">
+    <meta property="og:image:type" content="${imageType}">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:image:alt" content="${escapeHtml(postTitle)}">

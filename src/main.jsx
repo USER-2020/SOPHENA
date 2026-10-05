@@ -834,7 +834,7 @@ function FeedPostDetail() {
   useEffect(() => updateFeedMetadata(post), [post]);
   if (loading) return <main className="page-dark feed-detail-page"><div className="admin-loading">Cargando novedad...</div></main>;
   if (!post) return <main className="page-dark feed-detail-page"><div className="feed-page-top"><Logo/><button className="text-button" onClick={() => navigate('/feed')}><ArrowRight size={15} style={{ transform: 'rotate(180deg)' }}/> Volver a novedades</button></div><div className="feed-detail-empty surface-card"><span className="card-kicker">NOVEDAD NO DISPONIBLE</span><h1>Esta publicación ya no está disponible.</h1><button className="button button-primary" onClick={() => navigate('/feed')}>Ver novedades</button></div></main>;
-  const shareUrl = dataApi.feedService.shareUrl(post.id);
+  const shareUrl = dataApi.feedService.shareUrl(post.id, post.updated_at || post.published_at || post.created_at);
   const shareText = richTextToPlainText(post.excerpt || post.content || '').slice(0, 180);
   const sharePost = async () => {
     try {
