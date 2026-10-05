@@ -59,7 +59,8 @@
 .admin-sidebar .logo { padding:0 10px; }
 .admin-badge { display:inline-flex; align-self:flex-start; margin:34px 10px 0; padding:6px 9px; border:1px solid #7c5cff44; border-radius:999px; color:#b9adff; background:#7c5cff12; font-size:9px; font-weight:800; letter-spacing:.12em; }
 .admin-sidebar nav { display:grid; gap:6px; margin-top:22px; }
-.admin-sidebar nav button { display:flex; align-items:center; gap:10px; padding:11px 12px; border-radius:10px; color:#7c8798; background:transparent; font-size:11px; text-align:left; }
+.admin-sidebar nav button { display:flex; align-items:center; gap:10px; min-height:44px; padding:11px 12px; border-radius:10px; color:#7c8798; background:transparent; font-size:11px; text-align:left; }
+.admin-sidebar nav button svg { display:block; flex:none; width:20px; height:20px; }
 .admin-sidebar nav button:hover,.admin-sidebar nav button.active { color:#fff; background:#ffffff0a; }
 .admin-sidebar nav button.active svg { color:var(--green); }
 .admin-back { display:flex; align-items:center; gap:8px; margin-top:auto; padding:11px 12px; color:#778293; background:none; font-size:11px; }
