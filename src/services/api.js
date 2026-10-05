@@ -2,6 +2,7 @@ import { supabase, supabaseConfigured } from '../lib/supabase';
 import { brand } from '../config/brand';
 
 const LOCAL_KEY = 'sophena-local-state';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 
 const defaultAchievementCatalog = [
   { id: 'demo-achievement-first-day', slug: 'primer-dia', name: 'Primer día', description: 'Completaste tu primer registro y comenzaste tu proceso.', points: 50, icon: 'shield' },
@@ -339,7 +340,12 @@ export const adminService = {
 };
 
 export const themeService = { getActive: async () => { if (supabaseConfigured) { const { data, error } = await supabase.from('app_themes').select('*').eq('is_active', true).eq('enabled', true).maybeSingle(); if (error) throw error; return data; } return readLocal().appThemes?.find(item => item.is_active && item.enabled) || null; } };
-export const feedService = { list: () => list('app_feed_posts', 'feedPosts', { order: 'published_at' }) };
+export const feedService = {
+  list: () => list('app_feed_posts', 'feedPosts', { order: 'published_at' }),
+  shareUrl: postId => supabaseConfigured && supabaseUrl
+    ? `${supabaseUrl}/functions/v1/share-feed?post=${encodeURIComponent(postId)}`
+    : `${brand.url}/feed/${encodeURIComponent(postId)}`,
+};
 export const onboardingService = {
   async savePending(payload) { localStorage.setItem('sophena-pending-onboarding', JSON.stringify(payload)); },
   async completePending() {

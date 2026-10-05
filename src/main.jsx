@@ -834,24 +834,24 @@ function FeedPostDetail() {
   useEffect(() => updateFeedMetadata(post), [post]);
   if (loading) return <main className="page-dark feed-detail-page"><div className="admin-loading">Cargando novedad...</div></main>;
   if (!post) return <main className="page-dark feed-detail-page"><div className="feed-page-top"><Logo/><button className="text-button" onClick={() => navigate('/feed')}><ArrowRight size={15} style={{ transform: 'rotate(180deg)' }}/> Volver a novedades</button></div><div className="feed-detail-empty surface-card"><span className="card-kicker">NOVEDAD NO DISPONIBLE</span><h1>Esta publicación ya no está disponible.</h1><button className="button button-primary" onClick={() => navigate('/feed')}>Ver novedades</button></div></main>;
-  const postUrl = new URL(`/feed/${post.id}`, window.location.origin).href;
+  const shareUrl = dataApi.feedService.shareUrl(post.id);
   const shareText = richTextToPlainText(post.excerpt || post.content || '').slice(0, 180);
   const sharePost = async () => {
     try {
       if (navigator.share) {
-        await navigator.share({ title: post.title, text: shareText, url: postUrl });
+        await navigator.share({ title: post.title, text: shareText, url: shareUrl });
         return;
       }
-      if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(postUrl);
-      else window.prompt('Copia este enlace para compartir la novedad', postUrl);
+      if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(shareUrl);
+      else window.prompt('Copia este enlace para compartir la novedad', shareUrl);
       toast.success('Enlace de la novedad copiado.');
     } catch (shareError) {
       if (shareError?.name !== 'AbortError') toast.error('No pudimos preparar el enlace para compartir.');
     }
   };
-  const encodedUrl = encodeURIComponent(postUrl);
+  const encodedShareUrl = encodeURIComponent(shareUrl);
   const encodedTitle = encodeURIComponent(post.title || 'Novedad de SOPHENA');
-  return <main className="page-dark feed-detail-page"><div className="feed-page-top"><Logo/><button className="text-button" onClick={() => navigate('/feed')}><ArrowRight size={15} style={{ transform: 'rotate(180deg)' }}/> Volver a novedades</button></div><article className="feed-detail-card surface-card">{safeExternalUrl(post.image_url) && <img className="feed-detail-image" src={safeExternalUrl(post.image_url)} alt="" aria-hidden="true" onError={event => { event.currentTarget.hidden = true; }}/>}<span className="card-kicker">{post.category || 'NOVEDAD'}</span><h1>{post.title}</h1>{post.excerpt && <p className="feed-detail-excerpt">{richTextToPlainText(post.excerpt)}</p>}<div className="feed-rich-content" dangerouslySetInnerHTML={{ __html: richTextToHtml(post.content || post.excerpt || '') }}/><div className="feed-detail-share" role="group" aria-label="Compartir esta novedad"><button type="button" className="feed-share-primary" onClick={sharePost}><Share2 size={15}/> Compartir</button><a className="feed-share-network" href={`https://wa.me/?text=${encodeURIComponent(`${post.title} — ${postUrl}`)}`} target="_blank" rel="noreferrer">WhatsApp</a><a className="feed-share-network" href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`} target="_blank" rel="noreferrer">LinkedIn</a><a className="feed-share-network" href={`https://twitter.com/intent/tweet?text=${encodedTitle}&url=${encodedUrl}`} target="_blank" rel="noreferrer">X</a></div>{post.url && <a className="feed-detail-link" href={post.url} target="_blank" rel="noreferrer"><Link2 size={15}/> Ver recurso</a>}</article></main>;
+  return <main className="page-dark feed-detail-page"><div className="feed-page-top"><Logo/><button className="text-button" onClick={() => navigate('/feed')}><ArrowRight size={15} style={{ transform: 'rotate(180deg)' }}/> Volver a novedades</button></div><article className="feed-detail-card surface-card">{safeExternalUrl(post.image_url) && <img className="feed-detail-image" src={safeExternalUrl(post.image_url)} alt="" aria-hidden="true" onError={event => { event.currentTarget.hidden = true; }}/>}<span className="card-kicker">{post.category || 'NOVEDAD'}</span><h1>{post.title}</h1>{post.excerpt && <p className="feed-detail-excerpt">{richTextToPlainText(post.excerpt)}</p>}<div className="feed-rich-content" dangerouslySetInnerHTML={{ __html: richTextToHtml(post.content || post.excerpt || '') }}/><div className="feed-detail-share" role="group" aria-label="Compartir esta novedad"><button type="button" className="feed-share-primary" onClick={sharePost}><Share2 size={15}/> Compartir</button><a className="feed-share-network" href={`https://wa.me/?text=${encodeURIComponent(`${post.title} — ${shareUrl}`)}`} target="_blank" rel="noreferrer">WhatsApp</a><a className="feed-share-network" href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodedShareUrl}`} target="_blank" rel="noreferrer">LinkedIn</a><a className="feed-share-network" href={`https://twitter.com/intent/tweet?text=${encodedTitle}&url=${encodedShareUrl}`} target="_blank" rel="noreferrer">X</a></div>{post.url && <a className="feed-detail-link" href={post.url} target="_blank" rel="noreferrer"><Link2 size={15}/> Ver recurso</a>}</article></main>;
 }
 
 function AdminAudienceFieldsLegacy({ form, setForm }) {
