@@ -1,12 +1,12 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import {
   ArrowRight, Award, BarChart3, Bell, BookOpen, CalendarDays, Check, ChevronRight, CircleDollarSign,
   CircleHelp, Clock3, Flame, Footprints, Gamepad2, Gift, Goal, HeartPulse, Home, Leaf,
   LineChart, LockKeyhole, LogOut, Menu, MoreHorizontal, Plus, Rocket, Settings, ShieldCheck,
-  ShoppingBag, Sparkles, Target, Trophy, UserRound, Users, Wallet, X, Zap, Eye, EyeOff, Palette, Newspaper, Link2, Share2
+  ShoppingBag, Sparkles, Target, Trophy, UserRound, Users, Wallet, X, Zap, Eye, EyeOff, Palette, Newspaper, Link2, Share2, ImagePlus, Upload
 } from 'lucide-react';
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import toast, { Toaster } from 'react-hot-toast';
@@ -71,6 +71,181 @@ function notifyCrud(action, subject) {
   toast.success(messages[action] || `${subject} realizado correctamente.`);
 }
 
+const richTextTags = new Set(['a', 'b', 'blockquote', 'br', 'div', 'em', 'h2', 'h3', 'hr', 'i', 'li', 'ol', 'p', 's', 'strong', 'u', 'ul']);
+
+function sanitizeRichText(value = '') {
+  if (!value) return '';
+  if (typeof DOMParser === 'undefined') return String(value).replace(/<[^>]*>/g, '');
+  const parsed = new DOMParser().parseFromString(`<div>${value}</div>`, 'text/html');
+  const source = parsed.body.firstElementChild;
+  const output = parsed.createElement('div');
+  const cleanNode = node => {
+    if (node.nodeType === Node.TEXT_NODE) return parsed.createTextNode(node.nodeValue || '');
+    if (node.nodeType !== Node.ELEMENT_NODE) return null;
+    const tag = node.tagName.toLowerCase();
+    if (!richTextTags.has(tag)) {
+      const fragment = parsed.createDocumentFragment();
+      Array.from(node.childNodes).forEach(child => { const cleanChild = cleanNode(child); if (cleanChild) fragment.appendChild(cleanChild); });
+      return fragment;
+    }
+    const clean = parsed.createElement(tag);
+    if (tag === 'a') {
+      try {
+        const url = new URL(node.getAttribute('href') || '', window.location.origin);
+        if (['http:', 'https:', 'mailto:'].includes(url.protocol)) {
+          clean.setAttribute('href', url.href);
+          clean.setAttribute('target', '_blank');
+          clean.setAttribute('rel', 'noreferrer noopener');
+        }
+      } catch (error) {
+        return null;
+      }
+    }
+    Array.from(node.childNodes).forEach(child => { const cleanChild = cleanNode(child); if (cleanChild) clean.appendChild(cleanChild); });
+    return clean;
+  };
+  Array.from(source?.childNodes || []).forEach(node => { const cleanNodeResult = cleanNode(node); if (cleanNodeResult) output.appendChild(cleanNodeResult); });
+  return output.innerHTML;
+}
+
+function escapeRichText(value = '') {
+  return String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+}
+
+function richTextToHtml(value = '') {
+  if (!value) return '';
+  const normalized = /&lt;\/?(?:a|b|blockquote|br|div|em|h2|h3|hr|i|li|ol|p|s|strong|u|ul)\b/i.test(value) && typeof document !== 'undefined'
+    ? (() => { const decoder = document.createElement('textarea'); decoder.innerHTML = value; return decoder.value; })()
+    : value;
+  return normalized.includes('<') ? sanitizeRichText(normalized) : escapeRichText(normalized).replace(/\r?\n/g, '<br />');
+}
+
+function richTextToPlainText(value = '') {
+  if (!value) return '';
+  if (typeof DOMParser === 'undefined') return String(value).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+  return new DOMParser().parseFromString(richTextToHtml(value), 'text/html').body.textContent.replace(/\s+/g, ' ').trim();
+}
+
+function setHeadMeta(attribute, key, content) {
+  let element = document.head.querySelector(`meta[${attribute}="${key}"]`);
+  const previous = element?.getAttribute('content') ?? null;
+  if (!element) {
+    element = document.createElement('meta');
+    element.setAttribute(attribute, key);
+    document.head.appendChild(element);
+  }
+  element.setAttribute('content', content);
+  return { element, previous };
+}
+
+function updateFeedMetadata(post) {
+  if (typeof document === 'undefined' || !post) return () => {};
+  const postUrl = new URL(`/feed/${post.id}`, window.location.origin).href;
+  const customImageUrl = safeExternalUrl(post.image_url);
+  const imageUrl = customImageUrl || `${brand.url}/og-image.png`;
+  const description = richTextToPlainText(post.excerpt || post.content || brand.description).slice(0, 170);
+  const title = `${post.title || 'Novedad'} — SOPHENA`;
+  const publishedAt = post.published_at || post.created_at || new Date().toISOString();
+  const metadataEntries = [
+    ['name', 'description', description],
+    ['name', 'twitter:card', 'summary_large_image'],
+    ['name', 'twitter:title', title],
+    ['name', 'twitter:description', description],
+    ['name', 'twitter:image', imageUrl],
+    ['name', 'twitter:image:alt', post.title || 'Novedad de SOPHENA'],
+    ['name', 'twitter:url', postUrl],
+    ['property', 'og:type', 'article'],
+    ['property', 'og:title', title],
+    ['property', 'og:description', description],
+    ['property', 'og:url', postUrl],
+    ['property', 'og:site_name', brand.name],
+    ['property', 'og:locale', 'es_CO'],
+    ['property', 'og:image', imageUrl],
+    ['property', 'og:image:secure_url', imageUrl],
+    ['property', 'og:image:alt', post.title || 'Novedad de SOPHENA'],
+    ['property', 'article:section', post.category || 'Novedad'],
+    ['property', 'article:published_time', publishedAt],
+    ['property', 'article:modified_time', post.updated_at || publishedAt]
+  ];
+  if (!customImageUrl) metadataEntries.push(['property', 'og:image:type', 'image/png'], ['property', 'og:image:width', '1200'], ['property', 'og:image:height', '630']);
+  const metadata = metadataEntries.map(([attribute, key, content]) => ({ attribute, key, ...setHeadMeta(attribute, key, content) }));
+  const previousTitle = document.title;
+  document.title = title;
+  const canonical = document.head.querySelector('link[rel="canonical"]') || document.head.appendChild(Object.assign(document.createElement('link'), { rel: 'canonical' }));
+  const previousCanonical = canonical.getAttribute('href');
+  canonical.setAttribute('href', postUrl);
+  let schema = document.head.querySelector('#sophena-feed-article-schema');
+  const previousSchema = schema?.textContent ?? null;
+  if (!schema) {
+    schema = document.createElement('script');
+    schema.id = 'sophena-feed-article-schema';
+    schema.type = 'application/ld+json';
+    document.head.appendChild(schema);
+  }
+  schema.textContent = JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: post.title || 'Novedad de SOPHENA',
+    description,
+    url: postUrl,
+    image: [imageUrl],
+    datePublished: publishedAt,
+    dateModified: post.updated_at || publishedAt,
+    articleSection: post.category || 'Novedad',
+    author: { '@type': 'Organization', name: brand.name, url: brand.url },
+    publisher: { '@type': 'Organization', name: brand.name, url: brand.url, logo: { '@type': 'ImageObject', url: `${brand.url}/icon.svg` } },
+    mainEntityOfPage: { '@type': 'WebPage', '@id': postUrl }
+  });
+  return () => {
+    document.title = previousTitle;
+    metadata.forEach(({ element, previous }) => previous === null ? element.remove() : element.setAttribute('content', previous));
+    if (previousCanonical === null) canonical.remove(); else canonical.setAttribute('href', previousCanonical);
+    if (previousSchema === null) schema.remove(); else schema.textContent = previousSchema;
+  };
+}
+
+function RichTextEditor({ value, onChange, placeholder }) {
+  const editorRef = useRef(null);
+  const commit = () => onChange(sanitizeRichText(editorRef.current?.innerHTML || ''));
+  const format = (command, commandValue = null) => event => {
+    event.preventDefault();
+    editorRef.current?.focus();
+    document.execCommand(command, false, commandValue);
+    commit();
+  };
+  const addLink = event => {
+    event.preventDefault();
+    editorRef.current?.focus();
+    const url = window.prompt('Pega el enlace del recurso');
+    if (url?.trim()) {
+      document.execCommand('createLink', false, url.trim());
+      commit();
+    }
+  };
+  useEffect(() => {
+    if (!editorRef.current) return;
+    const nextHtml = richTextToHtml(value);
+    if (editorRef.current.innerHTML !== nextHtml) editorRef.current.innerHTML = nextHtml;
+  }, [value]);
+  return <div className="rich-text-editor">
+    <div className="rich-text-toolbar" role="toolbar" aria-label="Formato del contenido">
+      <button type="button" onMouseDown={format('bold')} aria-label="Negrita"><strong>B</strong></button>
+      <button type="button" onMouseDown={format('italic')} aria-label="Cursiva"><em>I</em></button>
+      <button type="button" onMouseDown={format('underline')} aria-label="Subrayado"><u>U</u></button>
+      <button type="button" onMouseDown={format('insertUnorderedList')} aria-label="Lista con viñetas">•</button>
+      <button type="button" onMouseDown={format('insertOrderedList')} aria-label="Lista numerada">1.</button>
+      <span className="rich-text-toolbar-divider" aria-hidden="true" />
+      <button type="button" className="rich-text-toolbar-label" onMouseDown={format('formatBlock', 'h2')} aria-label="Encabezado grande">H2</button>
+      <button type="button" className="rich-text-toolbar-label" onMouseDown={format('formatBlock', 'h3')} aria-label="Encabezado pequeño">H3</button>
+      <button type="button" onMouseDown={format('formatBlock', 'blockquote')} aria-label="Cita">“</button>
+      <button type="button" onMouseDown={addLink} aria-label="Insertar enlace"><Link2 size={13}/></button>
+      <button type="button" onMouseDown={format('insertHorizontalRule')} aria-label="Separador">—</button>
+      <button type="button" onMouseDown={format('removeFormat')} aria-label="Quitar formato">Tx</button>
+    </div>
+    <div ref={editorRef} className="rich-text-input" contentEditable role="textbox" aria-multiline="true" data-placeholder={placeholder} onInput={commit} suppressContentEditableWarning />
+  </div>;
+}
+
 function ProgressRing({ value, size = 112, stroke = 9, color = '#42d6a4', children }) {
   const radius = (size - stroke) / 2; const circumference = 2 * Math.PI * radius;
   const reduceMotion = useReducedMotion();
@@ -85,7 +260,7 @@ function ProgressRing({ value, size = 112, stroke = 9, color = '#42d6a4', childr
 function AnimatedNumber({ value, suffix = '' }) { const reduceMotion = useReducedMotion(); return <motion.span initial={reduceMotion ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={reduceMotion ? { duration: 0 } : { delay: .25 }}>{value}{suffix}</motion.span>; }
 
 function App() {
-  return <><LanguageSwitch/><ThemeController/><SplashScreen/><InstallPromptBanner/><Routes><Route path="/" element={<Navigate to="/welcome" replace />} /><Route path="/welcome" element={<Welcome />} /><Route path="/login" element={<AuthWithRecovery />} /><Route path="/forgot-password" element={<ForgotPassword />} /><Route path="/reset-password" element={<ResetPassword />} /><Route path="/register" element={<RegisterConnectedV2 />} /><Route path="/onboarding" element={<Onboarding />} /><Route path="/app/*" element={<AppShellWithMenu />} /><Route path="/feed" element={<FeedPage />} /><Route path="/super-admin/*" element={<SuperAdminShellV2 />} /></Routes><Toaster position="top-right" toastOptions={{ duration: 3200, success: { icon: '✓' }, style: { background: 'var(--card)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: '12px', boxShadow: '0 12px 32px rgba(0,0,0,.28)' } }}/></>;
+  return <><LanguageSwitch/><ThemeController/><SplashScreen/><InstallPromptBanner/><Routes><Route path="/" element={<Navigate to="/welcome" replace />} /><Route path="/welcome" element={<Welcome />} /><Route path="/login" element={<AuthWithRecovery />} /><Route path="/forgot-password" element={<ForgotPassword />} /><Route path="/reset-password" element={<ResetPassword />} /><Route path="/register" element={<RegisterConnectedV2 />} /><Route path="/onboarding" element={<Onboarding />} /><Route path="/app/*" element={<AppShellWithMenu />} /><Route path="/feed" element={<FeedPage />} /><Route path="/feed/:postId" element={<FeedPostDetail />} /><Route path="/super-admin" element={<SuperAdminShellV2 />} /><Route path="/super-admin/*" element={<SuperAdminShellV2 />} /></Routes><Toaster position="top-right" toastOptions={{ duration: 3200, success: { icon: '✓' }, style: { background: 'var(--card)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: '12px', boxShadow: '0 12px 32px rgba(0,0,0,.28)' } }}/></>;
 }
 
 function InstallPromptBanner() {
@@ -343,10 +518,17 @@ function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0);
   useEffect(() => {
     let mounted = true;
+    let channel = null;
     const loadCount = () => dataApi.notificationService.unreadCount().then(count => { if (mounted) setUnreadCount(count); }).catch(() => {});
     loadCount();
     window.addEventListener('sophena:notifications-updated', loadCount);
-    return () => { mounted = false; window.removeEventListener('sophena:notifications-updated', loadCount); };
+    dataApi.notificationService.subscribe(() => {
+      window.dispatchEvent(new Event('sophena:notifications-updated'));
+    }).then(nextChannel => {
+      if (!mounted) { nextChannel?.unsubscribe(); return; }
+      channel = nextChannel;
+    }).catch(() => {});
+    return () => { mounted = false; window.removeEventListener('sophena:notifications-updated', loadCount); channel?.unsubscribe(); };
   }, []);
   const label = unreadCount ? `Notificaciones, ${unreadCount} sin leer` : 'Notificaciones';
   return <button className="notification-button" aria-label={label} onClick={() => navigate('/app/notifications')}><Bell size={19}/>{unreadCount > 0 && <span className="notification-badge" aria-live="polite">{unreadCount > 99 ? '99+' : unreadCount}</span>}</button>;
@@ -357,14 +539,14 @@ function AppShell() {
   useEffect(() => { dataApi.profileService.get().then(setProfile).catch(() => {}); }, []);
   const page = location.pathname.split('/')[2] || 'home';
   const titles = { home: 'Inicio', progress: 'Tu progreso', rewards: 'Metas & recompensas', profile: 'Tu perfil', notifications: 'Notificaciones' };
-  return <div className="app-layout"><aside className="sidebar"><Logo/><div className="side-greeting"><span>ESPACIO PERSONAL</span><b>Hola, Camila <span>✦</span></b></div><nav>{navItems.map(({ to, label, icon: Icon }) => <button className={location.pathname === to ? 'active' : ''} onClick={() => navigate(to)} key={to}><Icon size={19}/>{label}{location.pathname === to && <i/>}</button>)}</nav><div className="sidebar-bottom"><div className="mini-level"><div className="level-icon"><Sparkles size={17}/></div><div><small>Nivel explorador</small><b>1.240 XP</b></div><ChevronRight size={16}/></div><button className="side-settings" onClick={() => navigate('/app/profile')}><Settings size={17}/> Configuración</button></div></aside><main className="app-main"><header className="mobile-header"><Logo compact/><div className="header-actions"><LanguageSwitch embedded/><NotificationBell/><button aria-label="Abrir perfil" onClick={() => navigate('/app/profile')} className="avatar">CM</button></div></header><header className="desktop-header"><div><span className="breadcrumb">ESPACIO PERSONAL <ChevronRight size={13}/> {titles[page] || 'Inicio'}</span><h2>{titles[page] || 'Inicio'}</h2></div><div className="header-actions"><NotificationBell/><button className="avatar" onClick={() => navigate('/app/profile')}>CM</button></div></header><AnimatePresence mode="wait"><motion.div key={location.pathname} className="page-content" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .3 }}>{page === 'home' && <DashboardConnected openSheet={() => setSheet(true)}/>} {page === 'progress' && <ProgressPage/>} {page === 'rewards' && <RewardsPageConnected/>} {page === 'profile' && <ProfilePage/>} {page === 'notifications' && <NotificationsPage/>}</motion.div></AnimatePresence></main><button className="mobile-add" onClick={() => setSheet(true)}><Plus size={24}/></button><nav className="bottom-nav">{navItems.slice(0,2).map(({to,label,icon:Icon}) => <button onClick={() => navigate(to)} className={location.pathname === to ? 'active' : ''} key={to}><Icon size={20}/><span>{label}</span></button>)}<button className="nav-plus" onClick={() => setSheet(true)}><Plus size={24}/></button>{navItems.slice(2).map(({to,label,icon:Icon}) => <button onClick={() => navigate(to)} className={location.pathname === to ? 'active' : ''} key={to}><Icon size={20}/><span>{label}</span></button>)}</nav>{sheet && <ActionSheetConnected close={() => setSheet(false)}/>}</div>;
+  return <div className="app-layout"><aside className="sidebar"><Logo/><div className="side-greeting"><span>ESPACIO PERSONAL</span><b>Hola, Camila <span>✦</span></b></div><nav>{navItems.map(({ to, label, icon: Icon }) => <button className={location.pathname === to ? 'active' : ''} onClick={() => navigate(to)} key={to}><Icon size={19}/>{label}{location.pathname === to && <i/>}</button>)}</nav><div className="sidebar-bottom"><div className="mini-level"><div className="level-icon"><Sparkles size={17}/></div><div><small>Nivel explorador</small><b>1.240 XP</b></div><ChevronRight size={16}/></div><button className="side-settings" onClick={() => navigate('/app/profile')}><Settings size={17}/> Configuración</button></div></aside><main className="app-main"><header className="mobile-header"><Logo compact/><div className="header-actions"><LanguageSwitch embedded/><NotificationBell/><button aria-label="Abrir perfil" onClick={() => navigate('/app/profile')} className="avatar">CM</button></div></header><header className="desktop-header"><div><span className="breadcrumb">ESPACIO PERSONAL <ChevronRight size={13}/> {titles[page] || 'Inicio'}</span><h2>{titles[page] || 'Inicio'}</h2></div><div className="header-actions"><NotificationBell/><LanguageSwitch embedded/><button className="avatar" onClick={() => navigate('/app/profile')}>CM</button></div></header><AnimatePresence mode="wait"><motion.div key={location.pathname} className="page-content" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .3 }}>{page === 'home' && <DashboardConnected openSheet={() => setSheet(true)}/>} {page === 'progress' && <ProgressPage/>} {page === 'rewards' && <RewardsPageConnected/>} {page === 'profile' && <ProfilePage/>} {page === 'notifications' && <NotificationsPage/>}</motion.div></AnimatePresence></main><button className="mobile-add" onClick={() => setSheet(true)}><Plus size={24}/></button><nav className="bottom-nav">{navItems.slice(0,2).map(({to,label,icon:Icon}) => <button onClick={() => navigate(to)} className={location.pathname === to ? 'active' : ''} key={to}><Icon size={20}/><span>{label}</span></button>)}<button className="nav-plus" onClick={() => setSheet(true)}><Plus size={24}/></button>{navItems.slice(2).map(({to,label,icon:Icon}) => <button onClick={() => navigate(to)} className={location.pathname === to ? 'active' : ''} key={to}><Icon size={20}/><span>{label}</span></button>)}</nav>{sheet && <ActionSheetConnected close={() => setSheet(false)}/>}</div>;
 }
 
 function AppShellWithMenu() {
   const location = useLocation(); const navigate = useNavigate(); const [sheet, setSheet] = useState(false); const [profile, setProfile] = useState(null); const [userMenu, setUserMenu] = useState(false);
   useEffect(() => { dataApi.onboardingService.completePending().catch(() => {}).finally(() => dataApi.profileService.get().then(setProfile).catch(() => {})); }, []);
   const menuItems = useModuleNavigation(profile); const page = location.pathname.split('/')[2] || 'home'; const titles = { home: 'Inicio', progress: 'Tu progreso', rewards: 'Metas & recompensas', profile: 'Tu perfil', notifications: 'Notificaciones', documentation: 'Documentación' }; const activeModule = menuItems.find(item => item.module && item.to === location.pathname); const title = activeModule?.label || titles[page] || 'Inicio'; const avatar = initials(profile?.full_name);
-  return <div className="app-layout"><aside className="sidebar"><Logo/><div className="side-greeting"><span>ESPACIO PERSONAL</span><b>Hola, {profile?.full_name || 'tu nombre'} <span>✦</span></b></div><nav>{menuItems.map(({ to, label, icon: Icon }) => <button className={location.pathname === to ? 'active' : ''} onClick={() => navigate(to)} key={to}><Icon size={19}/>{label}{location.pathname === to && <i/>}</button>)}</nav><div className="sidebar-bottom"><div className="mini-level"><div className="level-icon"><Sparkles size={17}/></div><div><small>Nivel explorador</small><b>{profile?.points || 0} XP</b></div><ChevronRight size={16}/></div><button className="side-settings" onClick={() => navigate('/app/profile')}><Settings size={17}/> Configuración</button></div></aside><main className="app-main"><header className="mobile-header"><Logo compact/><div className="header-actions"><LanguageSwitch embedded/><NotificationBell/><div className="user-menu"><button aria-label="Abrir menú de usuario" onClick={() => setUserMenu(!userMenu)} className="avatar">{avatar}</button>{userMenu && <UserMenu profile={profile} onClose={() => setUserMenu(false)}/>}</div></div></header><header className="desktop-header"><div><span className="breadcrumb">ESPACIO PERSONAL <ChevronRight size={13}/> {title}</span><h2>{title}</h2></div><div className="header-actions"><NotificationBell/><div className="user-menu"><button aria-label="Abrir menú de usuario" onClick={() => setUserMenu(!userMenu)} className="avatar">{avatar}</button>{userMenu && <UserMenu profile={profile} onClose={() => setUserMenu(false)}/>}</div></div></header><AnimatePresence mode="wait"><motion.div key={location.pathname} className="page-content" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .3 }}>{page === 'home' && <DashboardConnected openSheet={() => setSheet(true)}/>} {page === 'progress' && <ProgressPage/>} {page === 'rewards' && <RewardsPageConnected/>} {page === 'profile' && <ProfilePage/>} {page === 'notifications' && <NotificationsPage/>} {page === 'documentation' && <DocumentationPage/>} {activeModule && <ModuleExperiencePage module={activeModule.module} openSheet={() => setSheet(true)}/>}</motion.div></AnimatePresence></main><button className="mobile-add" onClick={() => setSheet(true)}><Plus size={24}/></button><nav className="bottom-nav">{menuItems.slice(0,2).map(({to,label,icon:Icon}) => <button onClick={() => navigate(to)} className={location.pathname === to ? 'active' : ''} key={to}><Icon size={20}/><span>{label}</span></button>)}<button className="nav-plus" onClick={() => setSheet(true)}><Plus size={24}/></button>{menuItems.slice(2).map(({to,label,icon:Icon}) => <button onClick={() => navigate(to)} className={location.pathname === to ? 'active' : ''} key={to}><Icon size={20}/><span>{label}</span></button>)}</nav>{sheet && <ActionSheetConnected close={() => setSheet(false)}/>}</div>;
+  return <div className="app-layout"><aside className="sidebar"><Logo/><div className="side-greeting"><span>ESPACIO PERSONAL</span><b>Hola, {profile?.full_name || 'tu nombre'} <span>✦</span></b></div><nav>{menuItems.map(({ to, label, icon: Icon }) => <button className={location.pathname === to ? 'active' : ''} onClick={() => navigate(to)} key={to}><Icon size={19}/>{label}{location.pathname === to && <i/>}</button>)}</nav><div className="sidebar-bottom"><div className="mini-level"><div className="level-icon"><Sparkles size={17}/></div><div><small>Nivel explorador</small><b>{profile?.points || 0} XP</b></div><ChevronRight size={16}/></div><button className="side-settings" onClick={() => navigate('/app/profile')}><Settings size={17}/> Configuración</button></div></aside><main className="app-main"><header className="mobile-header"><Logo compact/><div className="header-actions"><LanguageSwitch embedded/><NotificationBell/><div className="user-menu"><button aria-label="Abrir menú de usuario" onClick={() => setUserMenu(!userMenu)} className="avatar">{avatar}</button>{userMenu && <UserMenu profile={profile} onClose={() => setUserMenu(false)}/>}</div></div></header><header className="desktop-header"><div><span className="breadcrumb">ESPACIO PERSONAL <ChevronRight size={13}/> {title}</span><h2>{title}</h2></div><div className="header-actions"><NotificationBell/><LanguageSwitch embedded/><div className="user-menu"><button aria-label="Abrir menú de usuario" onClick={() => setUserMenu(!userMenu)} className="avatar">{avatar}</button>{userMenu && <UserMenu profile={profile} onClose={() => setUserMenu(false)}/>}</div></div></header><AnimatePresence mode="wait"><motion.div key={location.pathname} className="page-content" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .3 }}>{page === 'home' && <DashboardConnected openSheet={() => setSheet(true)}/>} {page === 'progress' && <ProgressPage/>} {page === 'rewards' && <RewardsPageConnected/>} {page === 'profile' && <ProfilePage/>} {page === 'notifications' && <NotificationsPage/>} {page === 'documentation' && <DocumentationPage/>} {activeModule && <ModuleExperiencePage module={activeModule.module} openSheet={() => setSheet(true)}/>}</motion.div></AnimatePresence></main><button className="mobile-add" onClick={() => setSheet(true)}><Plus size={24}/></button><nav className="bottom-nav">{menuItems.slice(0,2).map(({to,label,icon:Icon}) => <button onClick={() => navigate(to)} className={location.pathname === to ? 'active' : ''} key={to}><Icon size={20}/><span>{label}</span></button>)}<button className="nav-plus" onClick={() => setSheet(true)}><Plus size={24}/></button>{menuItems.slice(2).map(({to,label,icon:Icon}) => <button onClick={() => navigate(to)} className={location.pathname === to ? 'active' : ''} key={to}><Icon size={20}/><span>{label}</span></button>)}</nav>{sheet && <ActionSheetConnected close={() => setSheet(false)}/>}</div>;
 }
 
 function ModuleExperiencePage({ module, openSheet }) {
@@ -378,7 +560,7 @@ function SuperAdminShell() {
   const page = location.pathname.split('/')[2] || 'overview'; const nav = [{ key: 'overview', label: 'Resumen', icon: BarChart3 }, { key: 'achievements', label: 'Logros', icon: Trophy }, { key: 'modules', label: 'Módulos', icon: Sparkles }, { key: 'settings', label: 'Ajustes', icon: Settings }];
   if (loading) return <main className="page-dark admin-loading">Cargando consola…</main>;
   if (profile && profile.role !== 'super_admin') return <main className="page-dark admin-loading"><ShieldCheck size={30}/><h1>Acceso restringido</h1><p>Esta consola requiere el rol super_admin.</p><Button onClick={() => navigate('/app')}>Volver a SOPHENA</Button></main>;
-  return <div className="admin-layout"><aside className="admin-sidebar"><Logo/><div className="admin-badge"><ShieldCheck size={16}/><span>SUPER ADMIN</span></div><nav>{nav.map(({ key, label, icon: Icon }) => <button key={key} className={page === key ? 'active' : ''} onClick={() => navigate(`/super-admin/${key}`)}><Icon size={18}/>{label}</button>)}</nav><button className="admin-back" onClick={() => navigate('/app')}><ArrowRight size={16} style={{ transform: 'rotate(180deg)' }}/> Volver a SOPHENA</button></aside><main className="admin-main"><header className="admin-header"><div><span className="eyebrow">CONTROL CENTER</span><h1>{nav.find(item => item.key === page)?.label || 'Resumen'}</h1></div><div className="admin-user"><span>{profile?.full_name || 'Super admin'}</span><button className="avatar" onClick={() => navigate('/app/profile')}>{initials(profile?.full_name)}</button></div></header><AnimatePresence mode="wait"><motion.div key={page} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="admin-content">{page === 'overview' && <AdminOverview navigate={navigate}/>} {page === 'achievements' && <AdminAchievements/>} {page === 'modules' && <AdminModules/>} {page === 'settings' && <AdminSettings/>}</motion.div></AnimatePresence></main></div>;
+  return <div className="admin-layout"><aside className="admin-sidebar"><Logo/><div className="admin-badge"><ShieldCheck size={16}/><span>SUPER ADMIN</span></div><nav>{nav.map(({ key, label, icon: Icon }) => <button key={key} className={page === key ? 'active' : ''} onClick={() => navigate(`/super-admin/${key}`)}><Icon size={18}/>{label}</button>)}</nav><button className="admin-back" onClick={() => navigate('/app')}><ArrowRight size={16} style={{ transform: 'rotate(180deg)' }}/> Volver a SOPHENA</button></aside><main className="admin-main"><header className="admin-header"><div><span className="eyebrow">CONTROL CENTER</span><h1>{nav.find(item => item.key === page)?.label || 'Resumen'}</h1></div><div className="admin-user"><LanguageSwitch embedded/><span>{profile?.full_name || 'Super admin'}</span><button className="avatar" aria-label="Abrir ajustes del superadministrador" onClick={() => navigate('/super-admin/settings')}>{initials(profile?.full_name)}</button></div></header><AnimatePresence mode="wait"><motion.div key={page} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="admin-content">{page === 'overview' && <AdminOverview navigate={navigate}/>} {page === 'achievements' && <AdminAchievements/>} {page === 'modules' && <AdminModules/>} {page === 'settings' && <AdminSettings/>}</motion.div></AnimatePresence></main></div>;
 }
 
 function SuperAdminShellV2() {
@@ -440,12 +622,12 @@ function SuperAdminLogin({ onSuccess }) {
 }
 
 function SuperAdminPanel() {
-  const location = useLocation(); const navigate = useNavigate(); const [profile, setProfile] = useState(null); const [loading, setLoading] = useState(true);
+  const location = useLocation(); const navigate = useNavigate(); const [profile, setProfile] = useState(null); const [loading, setLoading] = useState(true); const [userMenu, setUserMenu] = useState(false);
   useEffect(() => { dataApi.profileService.get().then(setProfile).catch(() => {}).finally(() => setLoading(false)); }, []);
   const page = location.pathname.split('/')[2] || 'overview'; const nav = [{ key: 'overview', label: 'Resumen', icon: BarChart3 }, { key: 'achievements', label: 'Logros', icon: Trophy }, { key: 'modules', label: 'Módulos', icon: Sparkles }, { key: 'themes', label: 'Temas', icon: Palette }, { key: 'feed', label: 'Feed', icon: Newspaper }, { key: 'points', label: 'Puntos', icon: CircleDollarSign }, { key: 'users', label: 'Usuarios', icon: Users }, { key: 'roles', label: 'Roles y permisos', icon: ShieldCheck }, { key: 'documentation', label: 'Documentación', icon: BookOpen }, { key: 'settings', label: 'Ajustes', icon: Settings }];
   if (loading) return <main className="page-dark admin-loading">Cargando consola...</main>;
   if (profile && profile.role !== 'super_admin') return <main className="page-dark admin-loading"><ShieldCheck size={30}/><h1>Acceso restringido</h1><p>Esta consola requiere el rol super_admin.</p><Button onClick={() => navigate('/app')}>Volver a SOPHENA</Button></main>;
-  return <div className="admin-layout"><aside className="admin-sidebar"><Logo/><div className="admin-badge"><ShieldCheck size={16}/><span>SUPER ADMIN</span></div><nav>{nav.map(({ key, label, icon: Icon }) => <button key={key} className={page === key ? 'active' : ''} onClick={() => navigate(`/super-admin/${key}`)}><Icon size={18}/>{label}</button>)}</nav><button className="admin-back" onClick={() => navigate('/app')}><ArrowRight size={16} style={{ transform: 'rotate(180deg)' }}/> Volver a SOPHENA</button></aside><main className="admin-main"><header className="admin-header"><div><span className="eyebrow">CONTROL CENTER</span><h1>{nav.find(item => item.key === page)?.label || 'Resumen'}</h1></div><div className="admin-user"><span>{profile?.full_name || 'Super admin'}</span><button className="avatar" onClick={() => navigate('/app/profile')}>{initials(profile?.full_name)}</button></div></header><AnimatePresence mode="wait"><motion.div key={page} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="admin-content">{page === 'overview' && <AdminOverview navigate={navigate}/>} {page === 'achievements' && <AdminAchievements/>} {page === 'modules' && <AdminModulesAdvanced/>} {page === 'themes' && <AdminThemes/>} {page === 'feed' && <AdminFeed/>} {page === 'points' && <AdminPointRules/>} {page === 'users' && <AdminUsers/>} {page === 'roles' && <AdminRolesPermissions/>} {page === 'documentation' && <SuperAdminDocumentation/>} {page === 'settings' && <AdminSettings/>}</motion.div></AnimatePresence></main></div>;
+  return <div className="admin-layout"><aside className="admin-sidebar"><Logo/><div className="admin-badge"><ShieldCheck size={16}/><span>SUPER ADMIN</span></div><nav>{nav.map(({ key, label, icon: Icon }) => <button key={key} className={page === key ? 'active' : ''} onClick={() => navigate(`/super-admin/${key}`)}><Icon size={18}/>{label}</button>)}</nav><button className="admin-back" onClick={() => navigate('/app')}><ArrowRight size={16} style={{ transform: 'rotate(180deg)' }}/> Volver a SOPHENA</button></aside><main className="admin-main"><header className="admin-header"><div><span className="eyebrow">CONTROL CENTER</span><h1>{nav.find(item => item.key === page)?.label || 'Resumen'}</h1></div><div className="admin-user"><LanguageSwitch embedded/><span>{profile?.full_name || 'Super admin'}</span><div className="user-menu"><button className="avatar" aria-label="Abrir menú de superadministrador" aria-haspopup="menu" aria-expanded={userMenu} onClick={() => setUserMenu(current => !current)}>{initials(profile?.full_name)}</button>{userMenu && <UserMenu profile={profile} admin onClose={() => setUserMenu(false)}/>}</div></div></header><AnimatePresence mode="wait"><motion.div key={page} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="admin-content">{page === 'overview' && <AdminOverview navigate={navigate}/>} {page === 'achievements' && <AdminAchievements/>} {page === 'modules' && <AdminModulesAdvanced/>} {page === 'themes' && <AdminThemes/>} {page === 'feed' && <AdminFeed/>} {page === 'points' && <AdminPointRules/>} {page === 'users' && <AdminUsers/>} {page === 'roles' && <AdminRolesPermissions/>} {page === 'documentation' && <SuperAdminDocumentation/>} {page === 'settings' && <AdminSettings/>}</motion.div></AnimatePresence></main></div>;
 }
 
 function AdminOverview({ navigate }) {
@@ -482,8 +664,23 @@ function CrudHeading({ eyebrow, title, description }) { return <div className="a
 
 function AdminSelect({ value, onChange, options }) {
   const [open, setOpen] = useState(false);
+  const selectRef = useRef(null);
   const selected = options.find(option => option.value === value) || options[0];
-  return <div className="shadcn-select"><button type="button" className="shadcn-select-trigger" aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen(current => !current)}><span>{selected?.label}</span><ChevronRight size={15} className={open ? 'select-chevron open' : 'select-chevron'}/></button>{open && <div className="shadcn-select-content" role="listbox">{options.map(option => <button type="button" role="option" aria-selected={option.value === value} className={option.value === value ? 'selected' : ''} key={option.value} onClick={() => { onChange(option.value); setOpen(false); }}>{option.label}{option.value === value && <Check size={14}/>}</button>)}</div>}</div>;
+  useEffect(() => {
+    if (!open) return undefined;
+    const closeFromOutside = event => { if (!selectRef.current?.contains(event.target)) setOpen(false); };
+    const closeFromKeyboard = event => { if (event.key === 'Escape') setOpen(false); };
+    const closeFromFocus = event => { if (!selectRef.current?.contains(event.relatedTarget)) setOpen(false); };
+    document.addEventListener('pointerdown', closeFromOutside);
+    document.addEventListener('keydown', closeFromKeyboard);
+    selectRef.current?.addEventListener('focusout', closeFromFocus);
+    return () => {
+      document.removeEventListener('pointerdown', closeFromOutside);
+      document.removeEventListener('keydown', closeFromKeyboard);
+      selectRef.current?.removeEventListener('focusout', closeFromFocus);
+    };
+  }, [open]);
+  return <div ref={selectRef} className={`shadcn-select ${open ? 'is-open' : ''}`}><button type="button" className="shadcn-select-trigger" aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen(current => !current)}><span>{selected?.label}</span><ChevronRight size={15} className={open ? 'select-chevron open' : 'select-chevron'}/></button>{open && <div className="shadcn-select-content" role="listbox">{options.map(option => <button type="button" role="option" aria-selected={option.value === value} className={option.value === value ? 'selected' : ''} key={option.value} onClick={() => { onChange(option.value); setOpen(false); }}>{option.label}{option.value === value && <Check size={14}/>}</button>)}</div>}</div>;
 }
 
 function AdminModules() {
@@ -628,7 +825,33 @@ function AdminRolesPermissions() {
 function FeedPage() {
   const navigate = useNavigate(); const [posts, setPosts] = useState([]); const [loading, setLoading] = useState(true);
   useEffect(() => { dataApi.feedService.list().then(setPosts).catch(() => {}).finally(() => setLoading(false)); }, []);
-  return <main className="page-dark feed-page"><div className="feed-page-top"><Logo/><button className="text-button" onClick={() => navigate('/app')}><ArrowRight size={15} style={{ transform: 'rotate(180deg)' }}/> Volver a SOPHENA</button></div><div className="feed-page-intro"><span className="eyebrow">DESDE SOPHENA</span><h1>Ideas para seguir <em>avanzando.</em></h1><p>Información, herramientas y novedades seleccionadas para acompañarte.</p></div>{loading ? <div className="admin-loading">Cargando novedades...</div> : <div className="feed-page-grid">{posts.map(post => <article className="feed-page-card surface-card" key={post.id}><span className="card-kicker">{post.category || 'NOVEDAD'}</span><h2>{post.title}</h2><p>{post.content || post.excerpt}</p>{post.url && <a href={post.url} target="_blank" rel="noreferrer"><Link2 size={15}/> Ver recurso</a>}</article>)}{!posts.length && <div className="admin-empty surface-card">Todavía no hay novedades publicadas.</div>}</div>}</main>;
+  return <main className="page-dark feed-page"><div className="feed-page-top"><Logo/><button className="text-button" onClick={() => navigate('/app')}><ArrowRight size={15} style={{ transform: 'rotate(180deg)' }}/> Volver a SOPHENA</button></div><div className="feed-page-intro"><span className="eyebrow">DESDE SOPHENA</span><h1>Ideas para seguir <em>avanzando.</em></h1><p>Información, herramientas y novedades seleccionadas para acompañarte.</p></div>{loading ? <div className="admin-loading">Cargando novedades...</div> : <div className="feed-page-grid">{posts.map(post => { const summary = richTextToPlainText(post.excerpt || post.content || 'Sin resumen disponible.'); return <article className="feed-page-row surface-card" key={post.id}><button type="button" className="feed-page-row-toggle" onClick={() => navigate(`/feed/${post.id}`)}><span className="feed-page-row-icon"><Newspaper size={17}/></span><span className="feed-page-row-copy"><span className="card-kicker">{post.category || 'NOVEDAD'}</span><strong>{post.title}</strong><span className="feed-page-row-summary">{summary}</span></span><span className="feed-page-row-action"><span>Ver más</span><ChevronRight size={17}/></span></button></article>; })}{!posts.length && <div className="admin-empty surface-card">Todavía no hay novedades publicadas.</div>}</div>}</main>;
+}
+
+function FeedPostDetail() {
+  const navigate = useNavigate(); const { postId } = useParams(); const [post, setPost] = useState(null); const [loading, setLoading] = useState(true);
+  useEffect(() => { dataApi.feedService.list().then(posts => setPost(posts.find(item => item.id === postId) || null)).catch(() => setPost(null)).finally(() => setLoading(false)); }, [postId]);
+  useEffect(() => updateFeedMetadata(post), [post]);
+  if (loading) return <main className="page-dark feed-detail-page"><div className="admin-loading">Cargando novedad...</div></main>;
+  if (!post) return <main className="page-dark feed-detail-page"><div className="feed-page-top"><Logo/><button className="text-button" onClick={() => navigate('/feed')}><ArrowRight size={15} style={{ transform: 'rotate(180deg)' }}/> Volver a novedades</button></div><div className="feed-detail-empty surface-card"><span className="card-kicker">NOVEDAD NO DISPONIBLE</span><h1>Esta publicación ya no está disponible.</h1><button className="button button-primary" onClick={() => navigate('/feed')}>Ver novedades</button></div></main>;
+  const postUrl = new URL(`/feed/${post.id}`, window.location.origin).href;
+  const shareText = richTextToPlainText(post.excerpt || post.content || '').slice(0, 180);
+  const sharePost = async () => {
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: post.title, text: shareText, url: postUrl });
+        return;
+      }
+      if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(postUrl);
+      else window.prompt('Copia este enlace para compartir la novedad', postUrl);
+      toast.success('Enlace de la novedad copiado.');
+    } catch (shareError) {
+      if (shareError?.name !== 'AbortError') toast.error('No pudimos preparar el enlace para compartir.');
+    }
+  };
+  const encodedUrl = encodeURIComponent(postUrl);
+  const encodedTitle = encodeURIComponent(post.title || 'Novedad de SOPHENA');
+  return <main className="page-dark feed-detail-page"><div className="feed-page-top"><Logo/><button className="text-button" onClick={() => navigate('/feed')}><ArrowRight size={15} style={{ transform: 'rotate(180deg)' }}/> Volver a novedades</button></div><article className="feed-detail-card surface-card">{safeExternalUrl(post.image_url) && <img className="feed-detail-image" src={safeExternalUrl(post.image_url)} alt="" aria-hidden="true" onError={event => { event.currentTarget.hidden = true; }}/>}<span className="card-kicker">{post.category || 'NOVEDAD'}</span><h1>{post.title}</h1>{post.excerpt && <p className="feed-detail-excerpt">{richTextToPlainText(post.excerpt)}</p>}<div className="feed-rich-content" dangerouslySetInnerHTML={{ __html: richTextToHtml(post.content || post.excerpt || '') }}/><div className="feed-detail-share" role="group" aria-label="Compartir esta novedad"><button type="button" className="feed-share-primary" onClick={sharePost}><Share2 size={15}/> Compartir</button><a className="feed-share-network" href={`https://wa.me/?text=${encodeURIComponent(`${post.title} — ${postUrl}`)}`} target="_blank" rel="noreferrer">WhatsApp</a><a className="feed-share-network" href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`} target="_blank" rel="noreferrer">LinkedIn</a><a className="feed-share-network" href={`https://twitter.com/intent/tweet?text=${encodedTitle}&url=${encodedUrl}`} target="_blank" rel="noreferrer">X</a></div>{post.url && <a className="feed-detail-link" href={post.url} target="_blank" rel="noreferrer"><Link2 size={15}/> Ver recurso</a>}</article></main>;
 }
 
 function AdminAudienceFieldsLegacy({ form, setForm }) {
@@ -655,19 +878,115 @@ function AdminThemes() {
   return <div className="admin-crud"><CrudHeading eyebrow="IDENTIDAD VISUAL" title="Colores y temáticas" description="Crea temas visuales y activa uno para toda la aplicación."/><div className="admin-crud-layout"><form className="admin-form surface-card" onSubmit={save}><span className="card-kicker">{editing ? 'EDITAR TEMA' : 'NUEVO TEMA'}</span><label>Clave<input value={form.theme_key} onChange={e => setForm({ ...form, theme_key: e.target.value })} placeholder="noche-verde" required /></label><label>Nombre<input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Noche verde" required /></label><div className="theme-color-grid">{Object.entries(form.config).map(([key, value]) => <label key={key}>{key}<span className="theme-color-input"><input type="color" value={value} onChange={e => color(key, e.target.value)}/><input value={value} onChange={e => color(key, e.target.value)}/></span></label>)}</div><label className="admin-toggle"><input type="checkbox" checked={form.enabled} onChange={e => setForm({ ...form, enabled: e.target.checked })}/> Disponible</label><label className="admin-toggle"><input type="checkbox" checked={form.is_active} onChange={e => setForm({ ...form, is_active: e.target.checked })}/> Activar este tema</label>{error && <p className="form-error">{error}</p>}<Button>{editing ? 'Guardar tema' : 'Crear tema'} <Check size={16}/></Button>{editing && <button type="button" className="text-button" onClick={() => { setEditing(null); setForm(empty); }}>Cancelar</button>}</form><div className="admin-list">{items.map(item => <div className="admin-list-row surface-card" key={item.id}><div className="admin-list-icon" style={{ background: item.config?.purple, color: item.config?.green }}><Palette size={18}/></div><div><b>{item.name} {item.is_active && <small className="active-pill">ACTIVO</small>}</b><small>{item.theme_key}</small><span>{item.enabled ? 'Disponible para la aplicación' : 'Desactivado'}</span></div><div className="admin-row-actions"><button onClick={() => { setEditing(item.id); setForm({ theme_key: item.theme_key, name: item.name, enabled: item.enabled, is_active: item.is_active, config: { ...empty.config, ...(item.config || {}) } }); }}><Settings size={15}/></button><button onClick={() => remove(item.id)}><X size={15}/></button></div></div>)}{!items.length && <div className="admin-empty surface-card">Aún no hay temas creados.</div>}</div></div></div>;
 }
 
-function AdminFeed() {
-  const empty = { title: '', excerpt: '', content: '', url: '', category: 'Novedad', published: true, audience_type: 'all', audience_value: {} };
-  const [items, setItems] = useState([]); const [form, setForm] = useState(empty); const [editing, setEditing] = useState(null); const [error, setError] = useState('');
-  const load = () => dataApi.adminService.listFeedPosts().then(setItems).catch(error => setError(error.message)); useEffect(() => { load(); }, []);
-  const save = async event => { event.preventDefault(); setError(''); try { const payload = { ...form, published_at: new Date().toISOString() }; const item = editing ? await dataApi.adminService.updateFeedPost(editing, payload) : await dataApi.adminService.createFeedPost(payload); setItems(rows => editing ? rows.map(row => row.id === editing ? item : row) : [item, ...rows]); notifyCrud(editing ? 'updated' : 'created', 'Publicación'); setEditing(null); setForm(empty); } catch (saveError) { setError(saveError.message); } };
-  const remove = async id => { try { await dataApi.adminService.removeFeedPost(id); setItems(rows => rows.filter(row => row.id !== id)); notifyCrud('deleted', 'Publicación'); } catch (removeError) { setError(removeError.message || 'No pudimos eliminar la publicación.'); } };
-  return <div className="admin-crud"><CrudHeading eyebrow="COMUNICACIÓN" title="Feed y novedades" description="Comparte enlaces, información y anuncios con toda la comunidad o con una audiencia específica."/><div className="admin-crud-layout"><form className="admin-form surface-card" onSubmit={save}><span className="card-kicker">{editing ? 'EDITAR PUBLICACIÓN' : 'NUEVA PUBLICACIÓN'}</span><label>Título<input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Nueva experiencia en SOPHENA" required /></label><label>Resumen<textarea value={form.excerpt} onChange={e => setForm({ ...form, excerpt: e.target.value })} rows="2" placeholder="Una breve descripción" /></label><label>Contenido<textarea value={form.content} onChange={e => setForm({ ...form, content: e.target.value })} rows="4" placeholder="Información para la comunidad" /></label><label>Enlace<input type="url" value={form.url} onChange={e => setForm({ ...form, url: e.target.value })} placeholder="https://..." /></label><label>Categoría<input value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} placeholder="Novedad" /></label><AdminAudienceFields form={form} setForm={setForm}/><label className="admin-toggle"><input type="checkbox" checked={form.published} onChange={e => setForm({ ...form, published: e.target.checked })}/> Publicada</label>{error && <p className="form-error">{error}</p>}<Button>{editing ? 'Guardar publicación' : 'Publicar en el feed'} <Newspaper size={16}/></Button>{editing && <button type="button" className="text-button" onClick={() => { setEditing(null); setForm(empty); }}>Cancelar</button>}</form><div className="admin-list">{items.map(item => <div className="admin-list-row surface-card" key={item.id}><div className="admin-list-icon"><Newspaper size={18}/></div><div><b>{item.title}</b><small>{item.excerpt || item.content || 'Sin resumen'}</small><span>{item.published ? 'Publicada' : 'Borrador'} · {item.audience_type === 'all' ? 'Todos' : item.audience_type}</span></div><div className="admin-row-actions"><button onClick={() => setForm({ ...empty, ...item }) || setEditing(item.id)}><Settings size={15}/></button><button onClick={() => remove(item.id)}><X size={15}/></button></div></div>)}{!items.length && <div className="admin-empty surface-card">Aún no hay publicaciones.</div>}</div></div></div>;
+function safeExternalUrl(value = '') {
+  if (!String(value).trim()) return '';
+  try {
+    const url = new URL(value, window.location.origin);
+    return ['http:', 'https:'].includes(url.protocol) ? url.href : '';
+  } catch {
+    return '';
+  }
 }
 
-function UserMenu({ onClose, profile }) {
+function FeedCoverUploader({ value, onChange }) {
+  const inputRef = useRef(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState('');
+  const [previewError, setPreviewError] = useState(false);
+  const imageUrl = previewError ? '' : safeExternalUrl(value);
+
+  useEffect(() => { setPreviewError(false); }, [value]);
+
+  const selectFile = () => inputRef.current?.click();
+  const upload = async event => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    setError('');
+    setUploading(true);
+    try {
+      const result = await dataApi.storageService.uploadFeedCover(file);
+      setPreviewError(false);
+      onChange(result.url);
+    } catch (uploadError) {
+      setError(uploadError.message || 'No pudimos subir la portada.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return <div className="admin-feed-cover-uploader">
+    <div className="admin-feed-cover-label"><span>Portada <span className="field-help-inline">opcional</span></span><span>1200 × 630 recomendado</span></div>
+    <div className={`admin-feed-cover-dropzone ${imageUrl ? 'has-image' : ''} ${uploading ? 'is-uploading' : ''}`}>
+      {imageUrl ? <>
+        <img src={imageUrl} alt="Vista previa de la portada" onError={() => setPreviewError(true)} />
+        <div className="admin-feed-cover-overlay"><span>Portada cargada</span><div><button type="button" className="admin-feed-cover-action" onClick={selectFile} disabled={uploading}><Upload size={13}/> Cambiar</button><button type="button" className="admin-feed-cover-action is-muted" onClick={() => { onChange(''); setError(''); }} disabled={uploading}><X size={13}/> Quitar</button></div></div>
+      </> : <button type="button" className="admin-feed-cover-trigger" onClick={selectFile} disabled={uploading} aria-label="Seleccionar portada">
+        <span className="admin-feed-cover-icon"><ImagePlus size={19}/></span><span><b>{uploading ? 'Subiendo portada…' : 'Sube una portada'}</b><small>JPG, PNG o WebP · máximo 5 MB</small></span><Upload size={16}/>
+      </button>}
+      {uploading && <span className="admin-feed-cover-progress" role="status">Subiendo…</span>}
+    </div>
+    <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={upload} hidden />
+    {error && <p className="form-error" role="alert">{error}</p>}
+  </div>;
+}
+
+function FeedPostPreview({ post, compact = false }) {
+  const imageUrl = safeExternalUrl(post.image_url);
+  const contentText = richTextToPlainText(post.content || post.excerpt || '');
+  const wordCount = contentText ? contentText.split(/\s+/).filter(Boolean).length : 0;
+  const readingMinutes = Math.max(1, Math.ceil(wordCount / 180));
+  return <article className={`admin-feed-preview ${compact ? 'is-compact' : ''}`}>
+    {imageUrl && <img className="admin-feed-preview-image" src={imageUrl} alt="" aria-hidden="true" onError={event => { event.currentTarget.hidden = true; }}/>}
+    <div className="admin-feed-preview-body">
+      <div className="admin-feed-preview-meta"><span className="admin-feed-preview-category">{post.category || 'Novedad'}</span><span>{post.published === false ? 'Borrador' : 'Publicada'}</span><span><Clock3 size={12}/> {readingMinutes} min de lectura</span></div>
+      <h2>{post.title || 'El título de tu publicación aparecerá aquí'}</h2>
+      <p className="admin-feed-preview-excerpt">{post.excerpt || 'Añade un resumen para presentar el artículo antes de que la persona lo abra.'}</p>
+      {contentText ? <div className="admin-feed-preview-content" dangerouslySetInnerHTML={{ __html: richTextToHtml(post.content || post.excerpt) }}/> : <div className="admin-feed-preview-placeholder"><Newspaper size={17}/><span>La vista previa del contenido aparecerá aquí.</span></div>}
+      {post.url && <span className="admin-feed-preview-link"><Link2 size={13}/> Recurso externo incluido</span>}
+    </div>
+  </article>;
+}
+
+function AdminFeed() {
+  const empty = { title: '', excerpt: '', content: '', image_url: '', url: '', category: 'Novedad', published: true, audience_type: 'all', audience_value: {} };
+  const [items, setItems] = useState([]); const [form, setForm] = useState(empty); const [editing, setEditing] = useState(null); const [error, setError] = useState(''); const [view, setView] = useState('write');
+  const load = () => dataApi.adminService.listFeedPosts().then(setItems).catch(loadError => setError(loadError.message)); useEffect(() => { load(); }, []);
+  const save = async event => { event.preventDefault(); setError(''); try { const payload = { ...form, published_at: new Date().toISOString() }; const item = editing ? await dataApi.adminService.updateFeedPost(editing, payload) : await dataApi.adminService.createFeedPost(payload); setItems(rows => editing ? rows.map(row => row.id === editing ? item : row) : [item, ...rows]); notifyCrud(editing ? 'updated' : 'created', 'Publicación'); setEditing(null); setForm(empty); setView('write'); } catch (saveError) { setError(saveError.message || 'No pudimos guardar el artículo.'); } };
+  const remove = async id => { try { await dataApi.adminService.removeFeedPost(id); setItems(rows => rows.filter(row => row.id !== id)); notifyCrud('deleted', 'Publicación'); } catch (removeError) { setError(removeError.message || 'No pudimos eliminar la publicación.'); } };
+  const publishedCount = items.filter(item => item.published).length;
+  const draftCount = items.length - publishedCount;
+  const audienceLabel = type => type === 'all' ? 'Todos los usuarios' : type === 'roles' ? 'Roles seleccionados' : 'Usuarios seleccionados';
+  const editItem = item => { setEditing(item.id); setForm({ title: item.title || '', excerpt: item.excerpt || '', content: item.content || '', image_url: item.image_url || '', url: item.url || '', category: item.category || 'Novedad', published: item.published !== false, audience_type: item.audience_type || 'all', audience_value: item.audience_value || {} }); setView('write'); setError(''); };
+  const previewItem = item => { editItem(item); setView('preview'); };
+  const resetForm = () => { setEditing(null); setForm(empty); setView('write'); setError(''); };
+  const contentStats = useMemo(() => { const plain = richTextToPlainText(form.content || form.excerpt || ''); const words = plain ? plain.split(/\s+/).filter(Boolean).length : 0; return { words, minutes: Math.max(1, Math.ceil(words / 180)) }; }, [form.content, form.excerpt]);
+  return <div className="admin-crud admin-feed-page">
+    <CrudHeading eyebrow="COMUNICACIÓN" title="Estudio editorial" description="Crea artículos claros, visuales y fáciles de leer para acompañar a la comunidad."/>
+    <section className="admin-feed-overview surface-card"><div className="admin-feed-overview-copy"><span className="admin-feed-overview-icon"><Newspaper size={20}/></span><div><span className="card-kicker">CENTRO DE COMUNICACIÓN</span><h3>Convierte una novedad en una historia.</h3><p>Escribe, revisa la vista previa y publica con el alcance correcto.</p></div></div><div className="admin-feed-stats"><div><small>ARTÍCULOS</small><strong>{items.length}</strong></div><div><small>PUBLICADOS</small><strong>{publishedCount}</strong></div><div><small>BORRADORES</small><strong>{draftCount}</strong></div></div></section>
+    <div className="admin-feed-layout">
+      <form className="admin-form admin-feed-composer surface-card" onSubmit={save}>
+        <div className="admin-feed-form-heading"><span className="admin-feed-form-icon"><Newspaper size={18}/></span><div><span className="card-kicker">{editing ? 'EDITAR ARTÍCULO' : 'NUEVO ARTÍCULO'}</span><h3>{editing ? 'Continúa donde lo dejaste' : 'Escribe una nueva historia'}</h3></div><div className="admin-feed-view-switch" role="tablist" aria-label="Modo del editor"><button type="button" className={view === 'write' ? 'is-active' : ''} onClick={() => setView('write')} role="tab" aria-selected={view === 'write'}><Settings size={13}/> Editar</button><button type="button" className={view === 'preview' ? 'is-active' : ''} onClick={() => setView('preview')} role="tab" aria-selected={view === 'preview'}><Eye size={13}/> Vista previa</button></div></div>
+        <div className="admin-feed-editor-status"><span><span className="admin-feed-status-dot"/> {editing ? 'Cambios sin publicar' : 'Borrador local en edición'}</span><span>{contentStats.words} palabras · {contentStats.minutes} min de lectura</span></div>
+        {view === 'preview' ? <div className="admin-feed-preview-mode"><FeedPostPreview post={form}/><button type="button" className="text-button admin-feed-return-editor" onClick={() => setView('write')}><Settings size={14}/> Seguir editando</button></div> : <>
+          <label>Título<input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Ej. Tres formas de volver a elegirte" required /></label>
+          <label>Resumen<textarea value={form.excerpt} onChange={e => setForm({ ...form, excerpt: e.target.value })} rows="3" placeholder="Una entrada breve que invite a continuar leyendo" /></label>
+          <FeedCoverUploader value={form.image_url} onChange={image_url => setForm(current => ({ ...current, image_url }))}/>
+          <label className="admin-feed-content-field">Contenido del artículo<RichTextEditor value={form.content} onChange={content => setForm(current => ({ ...current, content }))} placeholder="Escribe la información para la comunidad..." /></label>
+          <div className="admin-feed-inline-fields"><label>Enlace de apoyo<input type="url" value={form.url} onChange={e => setForm({ ...form, url: e.target.value })} placeholder="https://..." /></label><label>Categoría<input value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} placeholder="Novedad" /></label></div>
+          <div className="admin-feed-audience"><span className="card-kicker">ALCANCE DEL ARTÍCULO</span><AdminAudienceFields form={form} setForm={setForm}/></div>
+        </>}
+        <div className="admin-feed-form-footer"><label className="admin-toggle"><input type="checkbox" checked={form.published} onChange={e => setForm({ ...form, published: e.target.checked })}/><span>{form.published ? 'Publicar inmediatamente' : 'Guardar como borrador'}</span></label><div className="admin-feed-actions"><Button>{editing ? 'Guardar artículo' : 'Publicar artículo'} <Newspaper size={16}/></Button>{editing && <button type="button" className="text-button" onClick={resetForm}>Cancelar</button>}</div></div>{error && <p className="form-error">{error}</p>}
+      </form>
+      <section className="admin-feed-library surface-card"><div className="admin-feed-library-heading"><div><span className="card-kicker">BIBLIOTECA DEL BLOG</span><h3>Tus artículos</h3><p>Selecciona una publicación para editarla o revisar cómo se leerá.</p></div><span className="admin-directory-count">{items.length}</span></div>{items.length ? <div className="admin-feed-list">{items.map(item => { const summary = richTextToPlainText(item.excerpt || item.content || 'Sin resumen disponible.'); return <article className={`admin-feed-post ${item.published ? 'is-published' : 'is-draft'}`} key={item.id}>{safeExternalUrl(item.image_url) && <img className="admin-feed-post-image" src={safeExternalUrl(item.image_url)} alt="" aria-hidden="true" onError={event => { event.currentTarget.hidden = true; }}/>}<div className="admin-feed-post-top"><span className="admin-feed-post-icon"><Newspaper size={17}/></span><span className="admin-feed-post-status">{item.published ? 'Publicada' : 'Borrador'}</span></div><h4>{item.title}</h4><p className="admin-feed-post-excerpt">{summary}</p><div className="admin-feed-post-meta"><span>{audienceLabel(item.audience_type)}</span><span>{item.category || 'Novedad'}</span></div><div className="admin-row-actions"><button type="button" onClick={() => previewItem(item)} aria-label={`Previsualizar ${item.title}`}><Eye size={15}/></button><button type="button" onClick={() => editItem(item)} aria-label={`Editar ${item.title}`}><Settings size={15}/></button><button type="button" onClick={() => remove(item.id)} aria-label={`Eliminar ${item.title}`}><X size={15}/></button></div></article>; })}</div> : <div className="admin-feed-empty"><span className="admin-feed-empty-icon"><Newspaper size={24}/></span><h4>Tu biblioteca está lista para empezar.</h4><p>Publica el primer artículo para crear una colección de ideas que acompañen a tu comunidad.</p></div>}</section>
+    </div>
+  </div>;
+}
+
+function UserMenu({ onClose, profile, admin = false }) {
   const navigate = useNavigate();
   const logout = async () => { await dataApi.authService.signOut(); localStorage.removeItem('nuvora-local-state'); navigate('/welcome'); };
-  return <div className="user-menu-dropdown" role="menu"><button onClick={() => { onClose(); navigate('/app/profile'); }}><UserRound size={16}/> Ver mi perfil</button><button onClick={() => { onClose(); navigate('/app/documentation'); }}><BookOpen size={16}/> Guía de usuario</button>{profile?.role === 'super_admin' && <><button onClick={() => { onClose(); navigate('/super-admin/documentation'); }}><ShieldCheck size={16}/> Guía superadmin</button><button onClick={() => { onClose(); navigate('/super-admin'); }}><Settings size={16}/> Consola superadmin</button></>}<div className="user-menu-divider"/><button className="danger-menu-item" onClick={logout}><LogOut size={16}/> Cerrar sesión</button></div>;
+  return <div className="user-menu-dropdown" role="menu"><button onClick={() => { onClose(); navigate(admin ? '/super-admin/settings' : '/app/profile'); }}><UserRound size={16}/> {admin ? 'Ajustes de cuenta' : 'Ver mi perfil'}</button>{admin ? <><button onClick={() => { onClose(); navigate('/super-admin/documentation'); }}><BookOpen size={16}/> Guía superadmin</button><button onClick={() => { onClose(); navigate('/app'); }}><ArrowRight size={16} style={{ transform: 'rotate(180deg)' }}/> Volver a SOPHENA</button></> : <><button onClick={() => { onClose(); navigate('/app/documentation'); }}><BookOpen size={16}/> Guía de usuario</button>{profile?.role === 'super_admin' && <><button onClick={() => { onClose(); navigate('/super-admin/documentation'); }}><ShieldCheck size={16}/> Guía superadmin</button><button onClick={() => { onClose(); navigate('/super-admin'); }}><Settings size={16}/> Consola superadmin</button></>}</>}<div className="user-menu-divider"/><button className="danger-menu-item" onClick={logout}><LogOut size={16}/> Cerrar sesión</button></div>;
 }
 
 function DocumentationPage() {

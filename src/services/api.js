@@ -121,6 +121,34 @@ async function remove(table, id, localKey) {
   const state = readLocal(); state[localKey] = (state[localKey] || []).filter(item => item.id !== id); writeLocal(state); return true;
 }
 
+const feedCoverBucket = 'feed-covers';
+const feedCoverMaxSize = 5 * 1024 * 1024;
+const feedCoverMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
+
+export const storageService = {
+  async uploadFeedCover(file) {
+    if (!supabaseConfigured) throw new Error('Configura Supabase para subir portadas al bucket de imágenes.');
+    if (!file) throw new Error('Selecciona una imagen para continuar.');
+    if (!feedCoverMimeTypes.includes(file.type)) throw new Error('La portada debe ser JPG, PNG o WebP.');
+    if (file.size > feedCoverMaxSize) throw new Error('La portada no puede superar los 5 MB.');
+
+    const user = await currentUser();
+    if (!user?.id) throw new Error('Tu sesión expiró. Vuelve a iniciar sesión para subir la portada.');
+    const extension = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+    const safeName = file.name.replace(/[^a-z0-9._-]/gi, '-').toLowerCase().slice(-80) || `portada.${extension}`;
+    const uniqueId = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const path = `${user.id}/${uniqueId}-${safeName}`;
+    const { data, error } = await supabase.storage.from(feedCoverBucket).upload(path, file, {
+      cacheControl: '3600',
+      contentType: file.type,
+      upsert: false,
+    });
+    if (error) throw error;
+    const { data: publicUrl } = supabase.storage.from(feedCoverBucket).getPublicUrl(data.path);
+    return { path: data.path, url: publicUrl.publicUrl, name: file.name };
+  },
+};
+
 export const profileService = {
   async get() { const user = await currentUser(); if (!supabaseConfigured) return localUser(); if (!user) throw new Error('Sesión no iniciada'); const { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).single(); if (error) throw error; return { ...data, email: user.email }; },
   async update(payload) { const user = await currentUser(); if (!supabaseConfigured) { const state = readLocal(); state.profile = { ...state.profile, ...payload }; writeLocal(state); return state.profile; } return update('profiles', user.id, payload, 'profile'); },
@@ -201,7 +229,11 @@ export const userAchievementService = {
   },
 };
 export const notificationService = {
-  create: async payload => insert('user_notifications', payload, 'userNotifications'),
+  create: async payload => {
+    const item = await insert('user_notifications', payload, 'userNotifications');
+    if (!supabaseConfigured) window.dispatchEvent(new Event('sophena:notifications-updated'));
+    return item;
+  },
   list: async () => {
     const user = await currentUser();
     return list('user_notifications', 'userNotifications', { userColumn: 'user_id', userId: user?.id, order: 'created_at' });
@@ -212,6 +244,16 @@ export const notificationService = {
     const { count, error } = await supabase.from('user_notifications').select('id', { count: 'exact', head: true }).eq('user_id', user.id).is('read_at', null);
     if (error) throw error;
     return count || 0;
+  },
+  subscribe: async onEvent => {
+    if (!supabaseConfigured) return null;
+    const user = await currentUser();
+    if (!user?.id) return null;
+    const channel = supabase.channel(`user-notifications-${user.id}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'user_notifications', filter: `user_id=eq.${user.id}` }, payload => onEvent?.(payload))
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'user_notifications', filter: `user_id=eq.${user.id}` }, payload => onEvent?.(payload))
+      .subscribe();
+    return channel;
   },
   markRead: async id => {
     const user = await currentUser();
@@ -315,4 +357,4 @@ export const onboardingService = {
   },
 };
 
-export const dataApi = { authService, profileService, habitService, goalService, checkinService, cravingService, relapseService, savingService, pointService, rewardService, userAchievementService, notificationService, adminService, themeService, feedService, onboardingService, isSupabaseConfigured: supabaseConfigured };
+export const dataApi = { authService, profileService, habitService, goalService, checkinService, cravingService, relapseService, savingService, pointService, rewardService, userAchievementService, notificationService, adminService, storageService, themeService, feedService, onboardingService, isSupabaseConfigured: supabaseConfigured };

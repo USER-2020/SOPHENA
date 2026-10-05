@@ -1,5 +1,13 @@
 # UX Flows actuales
 
+## Referencias por rol
+
+- Historias, criterios de aceptación y estado real: [`ROLE_USER_STORIES.md`](./ROLE_USER_STORIES.md).
+- Guías rápidas y mockups textuales: [`QUICK_GUIDES_BY_ROLE.md`](./QUICK_GUIDES_BY_ROLE.md).
+- Skill reutilizable para otros agentes: [`../.agents/skills/sophena-role-documentation/SKILL.md`](../.agents/skills/sophena-role-documentation/SKILL.md).
+
+La documentación distingue entre capacidades implementadas y roles que solo están catalogados en la base de datos. La seguridad efectiva se mantiene en Supabase/RLS/RPC.
+
 Los flujos siguientes reflejan rutas y servicios encontrados en el código; no representan funcionalidades futuras.
 
 ## Entrada y autenticación
@@ -40,6 +48,8 @@ flowchart TD
 ## Administración
 
 `/super-admin/*` entra por autenticación administrativa y expone vistas para usuarios, roles/permisos, módulos, settings, temas, logros, feed y documentación. Los datos se gestionan mediante `dataApi.adminService`.
+
+Las novedades se leen en `/feed/:postId`; el detalle genera metadatos sociales y ofrece compartir nativo o enlaces directos. El editor permite subir portadas al bucket `feed-covers` de Supabase y reutiliza su URL pública en el feed y en los metadatos sociales. El renderizado server-side para crawlers está descrito en [`SEO_SOCIAL_SHARING.md`](./SEO_SOCIAL_SHARING.md).
 
 ## Recomendaciones, no implementación
 

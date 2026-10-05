@@ -1,5 +1,15 @@
 # Sophena Product Model
 
+## Documentación funcional por roles
+
+La matriz de roles, historias de usuario, criterios de aceptación y guías rápidas viven en:
+
+- [`ROLE_USER_STORIES.md`](./ROLE_USER_STORIES.md)
+- [`QUICK_GUIDES_BY_ROLE.md`](./QUICK_GUIDES_BY_ROLE.md)
+- [`../.agents/skills/sophena-role-documentation/SKILL.md`](../.agents/skills/sophena-role-documentation/SKILL.md)
+
+Estas referencias deben actualizarse junto con migraciones, guards, rutas o cambios de `dataApi`. No se documenta como operativo un rol que solo exista en el catálogo de Supabase.
+
 Este documento separa la implementación actual de recomendaciones. La fuente de verdad es `src/main.jsx` y `src/services/api.js`.
 
 ## Implementación actual
