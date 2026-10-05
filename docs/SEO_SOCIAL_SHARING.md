@@ -18,6 +18,8 @@ La portada opcional se selecciona desde el editor y se guarda en el bucket públ
 
 La aplicación se entrega con Vite y el fallback de Apache sirve `index.html` para `/feed/:postId`. Los navegadores ejecutan React y reciben los metadatos dinámicos, pero algunos crawlers de redes sociales leen únicamente el HTML inicial y no ejecutan JavaScript. En ese caso mostrarán la tarjeta genérica de SOPHENA.
 
+El botón de compartir usa ahora `https://<project-ref>.supabase.co/functions/v1/share-feed?post=<id>` cuando Supabase está configurado. La Edge Function `supabase/functions/share-feed/index.ts` consulta únicamente publicaciones públicas (`audience_type = 'all'`) ya publicadas, genera el HTML con los metadatos de la portada y deja que el navegador continúe hacia `/feed/:postId`. Esto permite que los crawlers obtengan la imagen antes de que React cargue.
+
 Para obtener una tarjeta única por artículo en producción, el hosting debe renderizar o inyectar metadatos para `/feed/:postId` antes de entregar la SPA. La respuesta para crawlers debe consultar únicamente publicaciones públicas y emitir:
 
 1. `og:title`, `og:description`, `og:url`, `og:image` y `og:type=article`.
@@ -25,4 +27,4 @@ Para obtener una tarjeta única por artículo en producción, el hosting debe re
 3. Twitter Cards equivalentes.
 4. Un enlace canónico y una redirección/hidratación hacia la SPA para personas reales.
 
-No uses una service key de Supabase en el navegador ni en archivos públicos. La ruta server-side debe usar credenciales del entorno del hosting o un endpoint público con las mismas políticas de lectura que el feed.
+No uses una service key de Supabase en el navegador ni en archivos públicos. La función usa `SUPABASE_SERVICE_ROLE_KEY` únicamente en el entorno seguro de Supabase Edge Functions y no expone publicaciones segmentadas por roles o usuarios.
