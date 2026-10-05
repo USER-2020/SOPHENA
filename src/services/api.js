@@ -342,9 +342,13 @@ export const adminService = {
 export const themeService = { getActive: async () => { if (supabaseConfigured) { const { data, error } = await supabase.from('app_themes').select('*').eq('is_active', true).eq('enabled', true).maybeSingle(); if (error) throw error; return data; } return readLocal().appThemes?.find(item => item.is_active && item.enabled) || null; } };
 export const feedService = {
   list: () => list('app_feed_posts', 'feedPosts', { order: 'published_at' }),
-  shareUrl: postId => supabaseConfigured && supabaseUrl
-    ? `${supabaseUrl}/functions/v1/share-feed?post=${encodeURIComponent(postId)}`
-    : `${brand.url}/feed/${encodeURIComponent(postId)}`,
+  shareUrl: (postId, version = '') => {
+    const encodedPostId = encodeURIComponent(postId);
+    const cacheVersion = version ? `&v=${encodeURIComponent(version)}` : '';
+    return supabaseConfigured && supabaseUrl
+      ? `${supabaseUrl}/functions/v1/share-feed?post=${encodedPostId}${cacheVersion}`
+      : `${brand.url}/feed/${encodedPostId}`;
+  },
 };
 export const onboardingService = {
   async savePending(payload) { localStorage.setItem('sophena-pending-onboarding', JSON.stringify(payload)); },
